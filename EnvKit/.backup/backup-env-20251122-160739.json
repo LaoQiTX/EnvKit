@@ -1,0 +1,23 @@
+{
+  "env": {
+    "BUN_INSTALL_CACHE_DIR": "F:\\bun\\cache",
+    "CARGO_HOME": "F:\\rust\\.cargo",
+    "FLUTTER_STORAGE_BASE_URL": "https://storage.flutter-io.cn",
+    "IntelliJ IDEA": "D:\\IntelliJ IDEA 2024.3.1\\bin;",
+    "NODE_PATH": "F:\\nodejs\\node_modules",
+    "OneDrive": "C:\\Users\\Qi\\OneDrive",
+    "OneDriveConsumer": "C:\\Users\\Qi\\OneDrive",
+    "Path": "F:\\ServBay\\packages\\bun\\1;%USERPROFILE%\\.cargo\\bin;C:\\Users\\Qi\\AppData\\Roaming\\Composer\\vendor\\bin;C:\\Users\\Qi\\.cargo\\bin;C:\\Program Files (x86)\\Common Files\\Intel\\Shared Libraries\\redist\\intel64\\compiler;E:\\vmwarm\\bin\\;D:\\Program Files\\Python312\\Scripts\\;D:\\Program Files\\Python312\\;C:\\Program Files\\Zulu\\zulu-21\\bin\\;C:\\Program Files\\Common Files\\Oracle\\Java\\javapath;C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath;C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\;C:\\Windows\\System32\\OpenSSH\\;C:\\Program Files (x86)\\NVIDIA Corporation\\PhysX\\Common;C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin;D:\\adb\\platform-tools-latest-windows\\platform-tools;D:\\gradle\\gradle-6.1.1\\bin;C:\\Program Files\\dotnet\\;D:\\Program Files\\Git\\cmd;C:\\Program Files (x86)\\Windows Kits\\10\\Windows Performance Toolkit\\;C:\\Program Files\\NVIDIA Corporation\\NVIDIA app\\NvDLISR;C:\\Program Files\\dotnet\\sdk;F:\\nodejs\\;F:\\nodejs\\node_global;D:\\xftp\\;D:\\xshall\\;D:\\vivoHuChuan\\EasyShare\\x86\\;D:\\vivoHuChuan\\EasyShare\\x64\\;F:\\vivoOffice\\pcsuite\\;f:\\cursor\\resources\\app\\bin;F:\\Docker\\resources\\bin;F:\\ollama;F:\\rust\\.cargo\\bin;f:\\Trae CN\\bin;C:\\Users\\Qi\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\Qi\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;E:\\flutter\\flutter_windows_3.22.3-stable\\flutter\\bin;D:\\IntelliJ IDEA 2024.3.1\\bin;C:\\Program Files\\Java\\jdk-17\\bin;C:\\Users\\Qi\\.dotnet\\tools;C:\\Users\\Qi\\AppData\\Roaming\\npm;F:\\WebStorm 2024.3.3\\bin;F:\\rust\\.rustup;F:\\rust\\.cargo;F:\\cursor\\resources\\app\\bin;C:\\Users\\Qi\\AppData\\Roaming\\Python\\Python312\\Scripts;F:\\Zed\\bin;C:\\Users\\Qi\\.bun\\bin;%PyCharm%;F:\\ollama",
+    "PT7HOME": "F:\\Cisco Packet Tracer 7.0",
+    "PUB_HOSTED_UR": "https://pub.flutter-io.cn",
+    "PyCharm": "F:\\PyCharm\\bin",
+    "QWEN_TTS_API_KEY": "sk-be2d5bad7f924b39b9df2801ac11ed42",
+    "RUSTUP_HOME": "F:\\rust\\.rustup",
+    "TEMP": "%USERPROFILE%\\AppData\\Local\\Temp",
+    "TMP": "%USERPROFILE%\\AppData\\Local\\Temp",
+    "WebStorm": "F:\\WebStorm 2024.3.3\\bin;"
+  },
+  "reg": {},
+  "category": "env",
+  "meta": {}
+}
