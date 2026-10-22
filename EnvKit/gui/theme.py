@@ -3,14 +3,42 @@ import dearpygui.dearpygui as dpg
 from pathlib import Path
 from utils.path_helper import get_base_dir
 
+# -------------------------------------------------------------
+# 设计稿配色规范 (来自 design-notes.md 与 SVG 调色板)
+# -------------------------------------------------------------
+# 亮色模式 (Light):
+#   --bg: #FAFBFD (250, 251, 253)
+#   --sidebar-bg: #F0F3F9 (240, 243, 249)
+#   --surface: #FDFEFF (253, 254, 255)
+#   --surface-alt: #F4F7FC (244, 247, 252)
+#   --text: #202D43 (32, 45, 67)
+#   --muted: #5E6E86 (94, 110, 134)
+#   --line: #DBE3EF (219, 227, 239)
+#   --accent: #2E5FCC (46, 95, 204)
+#   --accent-hover: (36, 77, 176)
+#   --selected: #E5EDFC (229, 237, 252)
+#
+# 暗色模式 (Dark):
+#   --bg: #171D2A (23, 29, 42)
+#   --sidebar-bg: #131925 (19, 25, 37)
+#   --surface: #1C2433 (28, 36, 51)
+#   --surface-alt: #202B3E (32, 43, 62)
+#   --text: #E2E9F6 (226, 233, 246)
+#   --muted: #A6B5CF (166, 181, 207)
+#   --line: #33425D (51, 66, 93)
+#   --accent: #5687F0 (86, 135, 240)
+#   --selected: #293E66 (41, 62, 102)
+# -------------------------------------------------------------
+
 # 常用语义色
-COLOR_SUCCESS = (16, 185, 129, 255)
-COLOR_DANGER = (239, 68, 68, 255)
-COLOR_WARNING = (245, 158, 11, 255)
-COLOR_EMPTY = (168, 85, 247, 255)
-COLOR_MUTED = (156, 163, 175, 255)
-COLOR_PRIMARY = (59, 130, 246, 255)
-COLOR_WHITE = (243, 244, 246, 255)
+COLOR_PRIMARY = (46, 95, 204, 255)       # 钴蓝强调色 #2E5FCC
+COLOR_PRIMARY_DARK = (86, 135, 240, 255) # 深色模式浅蓝强调色 #5687F0
+COLOR_SUCCESS = (16, 185, 129, 255)      # 成功绿
+COLOR_WARNING = (145, 96, 31, 255)       # 设计稿路径警告黄 #91601F
+COLOR_DANGER = (164, 68, 54, 255)        # 设计稿错误红 #A44436
+COLOR_EMPTY = (140, 100, 210, 255)       # 紫色
+COLOR_MUTED = (94, 110, 134, 255)        # 次要灰蓝 #5E6E86
+COLOR_WHITE = (248, 250, 255, 255)
 
 # 主题状态存储
 _CURRENT_THEME = "dark"
@@ -41,127 +69,129 @@ def get_current_theme_mode() -> str:
     return _CURRENT_THEME
 
 def build_dark_theme():
-    """现代极简暗黑模式 (Slate Dark)"""
+    """深色模式 (海军蓝表面与浅蓝强调色，设计稿一致)"""
     with dpg.theme() as theme:
         with dpg.theme_component(dpg.mvAll):
-            # 基础几何圆角与内边距 (适配 20 号字)
-            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 5)
-            dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 6)
+            # 圆角规则：输入框/按钮 6，行选择 5，状态标签 4，面板 7
+            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 6)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 7)
+            dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 6)
             dpg.add_theme_style(dpg.mvStyleVar_PopupRounding, 6)
-            dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 4)
+            dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 5)
             dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 6)
-            dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 4)
-            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 9, 6)
+            dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 5)
+            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 10, 6)
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 6)
-            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 6, 5)
-            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 10)
+            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 8, 6)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 12, 12)
 
             # 颜色方案
-            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (24, 26, 32))
-            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (30, 33, 42))
-            dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (34, 38, 48))
-            dpg.add_theme_color(dpg.mvThemeCol_Border, (50, 56, 70))
+            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (23, 29, 42))        # #171D2A
+            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (28, 36, 51))         # #1C2433
+            dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (32, 43, 62))         # #202B3E
+            dpg.add_theme_color(dpg.mvThemeCol_Border, (51, 66, 93))          # #33425D
             dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (0, 0, 0, 0))
             
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (38, 43, 55))
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (48, 54, 70))
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (58, 65, 85))
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (32, 43, 62))         # #202B3E
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (41, 62, 102)) # #293E66
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (50, 75, 120))
             
-            dpg.add_theme_color(dpg.mvThemeCol_TitleBgActive, (32, 36, 46))
-            dpg.add_theme_color(dpg.mvThemeCol_TitleBg, (28, 31, 40))
+            dpg.add_theme_color(dpg.mvThemeCol_TitleBgActive, (28, 36, 51))
+            dpg.add_theme_color(dpg.mvThemeCol_TitleBg, (19, 25, 37))
             
             # Tab 选项卡
-            dpg.add_theme_color(dpg.mvThemeCol_Tab, (32, 36, 46))
-            dpg.add_theme_color(dpg.mvThemeCol_TabHovered, (59, 130, 246, 180))
-            dpg.add_theme_color(dpg.mvThemeCol_TabActive, (59, 130, 246))
-            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocused, (30, 34, 44))
-            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocusedActive, (45, 52, 68))
+            dpg.add_theme_color(dpg.mvThemeCol_Tab, (32, 43, 62))
+            dpg.add_theme_color(dpg.mvThemeCol_TabHovered, (86, 135, 240, 160))
+            dpg.add_theme_color(dpg.mvThemeCol_TabActive, (86, 135, 240))
+            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocused, (23, 29, 42))
+            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocusedActive, (41, 62, 102))
             
             # 按钮默认样式
-            dpg.add_theme_color(dpg.mvThemeCol_Button, (45, 52, 68))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (59, 130, 246))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (37, 99, 235))
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (38, 52, 75))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (86, 135, 240))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (60, 105, 210))
             
             # 表格样式
-            dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (34, 38, 50))
-            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (26, 29, 37))
-            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (32, 36, 46))
-            dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (44, 50, 64))
-            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (55, 62, 80))
+            dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (32, 43, 62))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (28, 36, 51))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (32, 43, 62))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (51, 66, 93))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (65, 84, 118))
             
-            # 文字与高亮
-            dpg.add_theme_color(dpg.mvThemeCol_Text, (240, 243, 246))
-            dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, (120, 126, 140))
-            dpg.add_theme_color(dpg.mvThemeCol_TextSelectedBg, (59, 130, 246, 120))
-            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (59, 130, 246))
-            dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, (59, 130, 246))
-            dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, (37, 99, 235))
-            dpg.add_theme_color(dpg.mvThemeCol_Separator, (46, 52, 66))
-            dpg.add_theme_color(dpg.mvThemeCol_Header, (45, 52, 68, 180))
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (59, 130, 246, 200))
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (37, 99, 235, 230))
+            # 文字与选中高亮
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (226, 233, 246))         # #E2E9F6
+            dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, (120, 135, 160))
+            dpg.add_theme_color(dpg.mvThemeCol_TextSelectedBg, (86, 135, 240, 120))
+            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (86, 135, 240))
+            dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, (86, 135, 240))
+            dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, (115, 155, 245))
+            dpg.add_theme_color(dpg.mvThemeCol_Separator, (51, 66, 93))
+            dpg.add_theme_color(dpg.mvThemeCol_Header, (41, 62, 102, 180))    # #293E66
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (86, 135, 240, 180))
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (60, 105, 210, 220))
     return theme
 
 def build_light_theme():
-    """现代纯净明亮模式 (macOS / Win11 Light)"""
+    """浅色模式 (冷白与浅蓝表面、钴蓝强调色，设计稿一致)"""
     with dpg.theme() as theme:
         with dpg.theme_component(dpg.mvAll):
-            # 基础几何圆角与内边距 (适配 20 号字)
-            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 5)
-            dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 6)
+            # 圆角规则：输入框/按钮 6，行选择 5，状态标签 4，面板 7
+            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 6)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowRounding, 7)
+            dpg.add_theme_style(dpg.mvStyleVar_ChildRounding, 6)
             dpg.add_theme_style(dpg.mvStyleVar_PopupRounding, 6)
-            dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 4)
+            dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 5)
             dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 6)
-            dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 4)
-            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 9, 6)
+            dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 5)
+            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 10, 6)
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 6)
-            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 6, 5)
-            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 10)
+            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 8, 6)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 12, 12)
 
             # 颜色方案
-            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (244, 246, 249))
-            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (255, 255, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (250, 251, 253))      # #FAFBFD
+            dpg.add_theme_color(dpg.mvThemeCol_ChildBg, (253, 254, 255))       # #FDFEFF
             dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (255, 255, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_Border, (222, 226, 235))
+            dpg.add_theme_color(dpg.mvThemeCol_Border, (219, 227, 239))        # #DBE3EF
             dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (0, 0, 0, 0))
             
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (238, 242, 248))
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (226, 232, 242))
-            dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (214, 222, 236))
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (244, 247, 252))       # #F4F7FC
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (229, 237, 252))# #E5EDFC
+            dpg.add_theme_color(dpg.mvThemeCol_FrameBgActive, (215, 226, 248))
             
-            dpg.add_theme_color(dpg.mvThemeCol_TitleBgActive, (230, 235, 245))
-            dpg.add_theme_color(dpg.mvThemeCol_TitleBg, (240, 243, 248))
+            dpg.add_theme_color(dpg.mvThemeCol_TitleBgActive, (240, 243, 249))
+            dpg.add_theme_color(dpg.mvThemeCol_TitleBg, (244, 247, 252))
             
             # Tab 选项卡
-            dpg.add_theme_color(dpg.mvThemeCol_Tab, (232, 236, 244))
-            dpg.add_theme_color(dpg.mvThemeCol_TabHovered, (59, 130, 246, 120))
-            dpg.add_theme_color(dpg.mvThemeCol_TabActive, (59, 130, 246))
-            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocused, (238, 242, 248))
-            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocusedActive, (220, 226, 238))
+            dpg.add_theme_color(dpg.mvThemeCol_Tab, (240, 243, 249))
+            dpg.add_theme_color(dpg.mvThemeCol_TabHovered, (46, 95, 204, 120))
+            dpg.add_theme_color(dpg.mvThemeCol_TabActive, (46, 95, 204))       # #2E5FCC
+            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocused, (244, 247, 252))
+            dpg.add_theme_color(dpg.mvThemeCol_TabUnfocusedActive, (229, 237, 252))
             
             # 按钮默认样式
-            dpg.add_theme_color(dpg.mvThemeCol_Button, (235, 239, 246))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (218, 226, 240))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (198, 210, 232))
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (244, 247, 252))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (229, 237, 252))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (210, 222, 245))
             
             # 表格样式
-            dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (236, 240, 248))
-            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (255, 255, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (247, 249, 252))
-            dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (226, 231, 240))
-            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (208, 215, 228))
+            dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (244, 247, 252))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (253, 254, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (244, 247, 252))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (219, 227, 239))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (200, 210, 225))
             
-            # 文字与高亮（高对比度深灰与纯黑，极易阅读）
-            dpg.add_theme_color(dpg.mvThemeCol_Text, (30, 36, 48))
-            dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, (140, 146, 160))
-            dpg.add_theme_color(dpg.mvThemeCol_TextSelectedBg, (59, 130, 246, 90))
-            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (37, 99, 235))
-            dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, (59, 130, 246))
-            dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, (37, 99, 235))
-            dpg.add_theme_color(dpg.mvThemeCol_Separator, (222, 226, 235))
-            dpg.add_theme_color(dpg.mvThemeCol_Header, (220, 230, 248, 180))
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (200, 218, 248, 220))
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (180, 206, 248, 240))
+            # 文字与选中高亮
+            dpg.add_theme_color(dpg.mvThemeCol_Text, (32, 45, 67))             # #202D43
+            dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, (130, 142, 160))
+            dpg.add_theme_color(dpg.mvThemeCol_TextSelectedBg, (46, 95, 204, 80))
+            dpg.add_theme_color(dpg.mvThemeCol_CheckMark, (46, 95, 204))
+            dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, (46, 95, 204))
+            dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, (36, 77, 176))
+            dpg.add_theme_color(dpg.mvThemeCol_Separator, (219, 227, 239))
+            dpg.add_theme_color(dpg.mvThemeCol_Header, (229, 237, 252, 200))   # #E5EDFC
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (215, 226, 248, 220))
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (198, 215, 245, 240))
     return theme
 
 def setup_global_theme():

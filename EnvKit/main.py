@@ -46,11 +46,11 @@ def main():
         build_ui()
         
         dpg.create_viewport(
-            title='EnvKit Pro',
-            width=1180,
-            height=820,
-            min_width=1000,
-            min_height=680
+            title='envkit - 本地环境工作台',
+            width=1420,
+            height=890,
+            min_width=1120,
+            min_height=700
         )
         dpg.setup_dearpygui()
         dpg.set_primary_window('EnvKit', True)
