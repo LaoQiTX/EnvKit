@@ -46,7 +46,7 @@ def main():
         build_ui()
         
         dpg.create_viewport(
-            title='envkit - 本地环境工作台',
+            title='EnvKit',
             width=1420,
             height=890,
             min_width=1120,
@@ -58,9 +58,9 @@ def main():
 
         # 安全设置中文窗口标题（避免 DearPyGui C++ 层的 UTF-8 视口标题奔溃问题）
         try:
-            hwnd = ctypes.windll.user32.FindWindowW(None, 'EnvKit Pro')
+            hwnd = ctypes.windll.user32.FindWindowW(None, 'EnvKit')
             if hwnd:
-                ctypes.windll.user32.SetWindowTextW(hwnd, 'EnvKit Pro - Windows 环境变量与注册表管理器')
+                ctypes.windll.user32.SetWindowTextW(hwnd, 'envkit - 本地环境工作台')
         except Exception:
             pass
 
