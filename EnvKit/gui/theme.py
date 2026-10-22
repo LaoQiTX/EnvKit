@@ -85,6 +85,7 @@ def build_dark_theme():
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 6)
             dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 8, 6)
             dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 10)
+            dpg.add_theme_style(dpg.mvStyleVar_SelectableTextAlign, 0.0, 0.5)
 
             # 颜色方案
             dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (23, 29, 42))        # #171D2A
@@ -118,14 +119,14 @@ def build_dark_theme():
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (86, 135, 240))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (60, 105, 210))
             
-            # 表格样式
+            # 表格样式与单元格间距优化 (垂直内边距设为 0，使选中整行覆盖全单元格)
             dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (32, 43, 62))
             dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (28, 36, 51))
             dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (32, 43, 62))
             dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (51, 66, 93))
             dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (65, 84, 118))
             
-            # 文字与选中高亮
+            # 文字与选中高亮 (纯正不透明度与悬停色，整行高亮无缝覆盖)
             dpg.add_theme_color(dpg.mvThemeCol_Text, (226, 233, 246))         # #E2E9F6
             dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, (120, 135, 160))
             dpg.add_theme_color(dpg.mvThemeCol_TextSelectedBg, (86, 135, 240, 120))
@@ -133,9 +134,13 @@ def build_dark_theme():
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, (86, 135, 240))
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, (115, 155, 245))
             dpg.add_theme_color(dpg.mvThemeCol_Separator, (51, 66, 93))
-            dpg.add_theme_color(dpg.mvThemeCol_Header, (41, 62, 102, 180))    # #293E66
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (86, 135, 240, 180))
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (60, 105, 210, 220))
+            dpg.add_theme_color(dpg.mvThemeCol_Header, (41, 62, 102, 255))    # 纯色选中背景 #293E66
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (56, 85, 140, 240)) # 纯净悬停背景
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (60, 105, 210, 255))
+
+        with dpg.theme_component(dpg.mvTable):
+            # 表格单元格垂直 padding 紧凑化，让 selectable(span_columns) 完美贴合表格行上下边缘
+            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 10, 0)
     return theme
 
 def build_light_theme():
@@ -155,6 +160,7 @@ def build_light_theme():
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 6)
             dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 8, 6)
             dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 10)
+            dpg.add_theme_style(dpg.mvStyleVar_SelectableTextAlign, 0.0, 0.5)
 
             # 颜色方案
             dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (250, 251, 253))      # #FAFBFD
@@ -188,14 +194,14 @@ def build_light_theme():
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (229, 237, 252))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (210, 222, 245))
             
-            # 表格样式
+            # 表格样式与单元格间距优化 (垂直内边距设为 0，使选中整行覆盖全单元格)
             dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (244, 247, 252))
             dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (253, 254, 255))
             dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (244, 247, 252))
             dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (219, 227, 239))
             dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (200, 210, 225))
             
-            # 文字与选中高亮
+            # 文字与选中高亮 (高辨识度纯色选中背景)
             dpg.add_theme_color(dpg.mvThemeCol_Text, (32, 45, 67))             # #202D43
             dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, (130, 142, 160))
             dpg.add_theme_color(dpg.mvThemeCol_TextSelectedBg, (46, 95, 204, 80))
@@ -203,9 +209,13 @@ def build_light_theme():
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, (46, 95, 204))
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, (36, 77, 176))
             dpg.add_theme_color(dpg.mvThemeCol_Separator, (219, 227, 239))
-            dpg.add_theme_color(dpg.mvThemeCol_Header, (229, 237, 252, 200))   # #E5EDFC
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (215, 226, 248, 220))
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (198, 215, 245, 240))
+            dpg.add_theme_color(dpg.mvThemeCol_Header, (215, 228, 250, 255))   # 浅蓝选中 #D7E4FA
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (232, 240, 254, 255)) # 悬停
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (198, 215, 245, 255))
+
+        with dpg.theme_component(dpg.mvTable):
+            # 表格单元格垂直 padding 紧凑化，让 selectable(span_columns) 完美贴合表格行上下边缘
+            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 10, 0)
     return theme
 
 def setup_global_theme():
@@ -237,4 +247,15 @@ def create_button_theme(bg_color, hover_color, active_color, text_color=None):
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, active_color)
             if text_color:
                 dpg.add_theme_color(dpg.mvThemeCol_Text, text_color)
+    return theme
+
+def create_splitter_theme():
+    """分割条主题：平时呈现极细隐形分界线，悬停时点亮为蓝色，拖拽时变为高亮蓝色"""
+    with dpg.theme() as theme:
+        with dpg.theme_component(dpg.mvButton):
+            dpg.add_theme_color(dpg.mvThemeCol_Button, (45, 58, 80, 80))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (86, 135, 240, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (46, 95, 204, 255))
+            dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3)
+            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, 0)
     return theme

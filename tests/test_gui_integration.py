@@ -50,6 +50,21 @@ def test_full_gui_sidebar_lifecycle():
     assert reverted_mode == init_mode
     dpg.render_dearpygui_frame()
 
+    # Test Splitter Bars existence and resize functionality
+    assert dpg.does_item_exist('env_splitter_bar')
+    assert dpg.does_item_exist('env_left_pane')
+    assert dpg.does_item_exist('env_right_pane')
+    assert dpg.does_item_exist('reg_splitter_bar')
+    assert dpg.does_item_exist('reg_left_pane')
+    assert dpg.does_item_exist('reg_right_pane')
+
+    # Test dynamic width adjustment on env panes
+    orig_right_w = dpg.get_item_width('env_right_pane')
+    dpg.set_item_width('env_right_pane', 500)
+    dpg.set_item_width('env_left_pane', -512)
+    assert dpg.get_item_width('env_right_pane') == 500
+    assert dpg.get_item_width('env_left_pane') == -512
+
     # Test Path View Inputs
     assert dpg.does_item_exist('path_add_input')
     dpg.set_value('path_add_input', r'C:\MyTest\Bin')

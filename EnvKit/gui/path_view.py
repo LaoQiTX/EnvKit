@@ -55,18 +55,19 @@ class PathViewUI:
 
             row_id = dpg.add_table_row(parent=self.table_id)
             
-            # 1. 序号与整行高亮选中
+            # 1. 序号与整行高亮选中 (行高 34px 全覆盖)
             is_sel = (idx == self.selected_idx)
             dpg.add_selectable(
                 label=f"#{idx + 1}",
                 parent=row_id,
                 span_columns=True,
+                height=34,
                 default_value=is_sel,
                 callback=self._on_row_select,
                 user_data=(idx, raw)
             )
             
-            # 2. 状态标签
+            # 2. 状态标签 (垂直居中)
             badge_text = "有效"
             badge_color = COLOR_SUCCESS
             if entry['is_empty']:
@@ -85,26 +86,34 @@ class PathViewUI:
                 badge_text = "指向文件"
                 badge_color = COLOR_WARNING
 
-            dpg.add_text(badge_text, parent=row_id, color=badge_color)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=3)
+                dpg.add_text(badge_text, color=badge_color)
 
-            # 3. 启用复选框
+            # 3. 启用复选框 (垂直居中)
             chk_tag = f"path_enabled_{idx}"
-            dpg.add_checkbox(tag=chk_tag, default_value=True, parent=row_id, callback=self._on_toggle_enable, user_data=idx)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=2)
+                dpg.add_checkbox(tag=chk_tag, default_value=True, callback=self._on_toggle_enable, user_data=idx)
 
-            # 4. 路径文本
+            # 4. 路径文本 (垂直居中)
             disp_text = raw if raw else "(空条目 ;;)"
-            dpg.add_text(disp_text, parent=row_id, color=badge_color if not entry['exists'] else (240, 243, 246, 255))
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=3)
+                dpg.add_text(disp_text, color=badge_color if not entry['exists'] else (240, 243, 246, 255))
 
-            # 5. 操作按钮组
-            btn_group = dpg.add_group(horizontal=True, parent=row_id)
-            dpg.add_button(label="▲", parent=btn_group, callback=self._move_item, user_data=(idx, -1), width=28)
-            dpg.add_button(label="▼", parent=btn_group, callback=self._move_item, user_data=(idx, 1), width=28)
-            dpg.add_button(label="置顶", parent=btn_group, callback=self._move_to_top, user_data=idx)
-            
-            if entry['exists']:
-                dpg.add_button(label="打开", parent=btn_group, callback=lambda s, d, u: open_in_explorer(u), user_data=normalize_path(raw))
+            # 5. 操作按钮组 (垂直居中)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=1)
+                btn_group = dpg.add_group(horizontal=True)
+                dpg.add_button(label="▲", parent=btn_group, callback=self._move_item, user_data=(idx, -1), width=28)
+                dpg.add_button(label="▼", parent=btn_group, callback=self._move_item, user_data=(idx, 1), width=28)
+                dpg.add_button(label="置顶", parent=btn_group, callback=self._move_to_top, user_data=idx)
                 
-            dpg.add_button(label="删除", parent=btn_group, callback=self._delete_item, user_data=idx)
+                if entry['exists']:
+                    dpg.add_button(label="打开", parent=btn_group, callback=lambda s, d, u: open_in_explorer(u), user_data=normalize_path(raw))
+                    
+                dpg.add_button(label="删除", parent=btn_group, callback=self._delete_item, user_data=idx)
 
     def _on_row_select(self, sender, app_data, user_data):
         idx, raw = user_data

@@ -54,48 +54,57 @@ class BackupViewUI:
 
             row_id = dpg.add_table_row(parent=self.table_id)
             
-            # 1. 时间戳与选中高亮
+            # 1. 时间戳与选中高亮 (行高 34px 全覆盖)
             dpg.add_selectable(
                 label=mtime_str,
                 parent=row_id,
                 span_columns=True,
+                height=34,
                 callback=self._on_select_snapshot,
                 user_data=str(f)
             )
 
-            # 2. 类别
-            dpg.add_text(category, parent=row_id, color=cat_color)
+            # 2. 类别 (垂直居中)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=3)
+                dpg.add_text(category, color=cat_color)
 
-            # 3. 文件名
-            dpg.add_text(f.name, parent=row_id)
+            # 3. 文件名 (垂直居中)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=3)
+                dpg.add_text(f.name)
 
-            # 4. 文件大小
-            dpg.add_text(f"{size_kb} KB", parent=row_id, color=COLOR_MUTED)
+            # 4. 文件大小 (垂直居中)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=3)
+                dpg.add_text(f"{size_kb} KB", color=COLOR_MUTED)
 
-            # 5. 操作组
-            actions_grp = dpg.add_group(horizontal=True, parent=row_id)
-            b_res = dpg.add_button(
-                label="恢复",
-                parent=actions_grp,
-                callback=self._do_restore,
-                user_data=str(f)
-            )
-            dpg.bind_item_theme(b_res, btn_restore)
+            # 5. 操作组 (垂直居中)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=1)
+                actions_grp = dpg.add_group(horizontal=True)
+                b_res = dpg.add_button(
+                    label="恢复",
+                    parent=actions_grp,
+                    callback=self._do_restore,
+                    user_data=str(f)
+                )
+                dpg.bind_item_theme(b_res, btn_restore)
 
-            dpg.add_button(
-                label="定位",
-                parent=actions_grp,
-                callback=lambda s, d, u: open_in_explorer(u),
-                user_data=str(f)
-            )
+                dpg.add_button(
+                    label="定位",
+                    parent=actions_grp,
+                    callback=lambda s, d, u: open_in_explorer(u),
+                    user_data=str(f)
+                )
 
-            b_del = dpg.add_button(
-                label="删除",
-                parent=actions_grp,
-                callback=self._do_delete,
-                user_data=str(f)
-            )
-            dpg.bind_item_theme(b_del, btn_danger)
+                b_del = dpg.add_button(
+                    label="删除",
+                    parent=actions_grp,
+                    callback=self._do_delete,
+                    user_data=str(f)
+                )
+                dpg.bind_item_theme(b_del, btn_danger)
 
     def _on_select_snapshot(self, sender, app_data, user_data):
         file_path = user_data

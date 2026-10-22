@@ -10,7 +10,7 @@ from utils.win_utils import choose_file, choose_directory, open_in_explorer
 from utils.path_check import normalize_path, analyze_paths, clean_path_entries
 from gui.theme import (
     COLOR_SUCCESS, COLOR_DANGER, COLOR_WARNING, COLOR_MUTED,
-    COLOR_PRIMARY, COLOR_EMPTY, create_button_theme
+    COLOR_PRIMARY, COLOR_EMPTY, create_button_theme, create_splitter_theme
 )
 
 CRITICAL_ENV_VARS = {
@@ -34,7 +34,7 @@ class EnvUI:
         self.search_filter = ""
         self.vars_cache = {}
         
-        # 详情面板状态
+        # 详情面板状态与可拖拽分割条尺寸
         self.selected_key = None
         self.is_new_mode = False
         self.detail_container_id = None
@@ -43,6 +43,10 @@ class EnvUI:
         
         # PATH 专属状态
         self.path_entries = []
+        self.detail_width = 420
+        self.left_pane_tag = 'env_left_pane'
+        self.right_pane_tag = 'env_right_pane'
+        self.splitter_tag = 'env_splitter_bar'
 
     def get_current_scope(self) -> str:
         return self.scope
@@ -91,17 +95,18 @@ class EnvUI:
             row_id = dpg.add_table_row(parent=self.table_id)
             is_sel = (k == self.selected_key and not self.is_new_mode)
 
-            # 1. 变量名称（整行高亮选择，单击右侧直接无缝连续编辑）
+            # 1. 变量名称（整行高亮选择，行高 34px 彻底覆盖全单元格）
             dpg.add_selectable(
                 label=k,
                 parent=row_id,
                 span_columns=True,
+                height=34,
                 default_value=is_sel,
                 callback=self._on_row_selected,
                 user_data=k
             )
 
-            # 2. 变量值概览
+            # 2. 变量值概览 (垂直居中微调与精确对齐)
             is_path_var = (k.upper() == 'PATH')
             if is_path_var:
                 parts_count = len([p for p in v.split(';') if p.strip()])
@@ -111,9 +116,11 @@ class EnvUI:
                 disp_val = v if len(v) <= 80 else v[:77] + "..."
                 val_color = COLOR_MUTED
 
-            dpg.add_text(disp_val, parent=row_id, color=val_color)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=3)
+                dpg.add_text(disp_val, color=val_color)
 
-            # 3. 状态标签 (设计稿美学：常规 / 正常 / 提示 / 关键)
+            # 3. 状态标签 (设计稿美学：常规 / 正常 / 提示 / 关键，垂直居中)
             badge_text = "正常"
             badge_color = COLOR_MUTED
             if is_path_var:
@@ -141,7 +148,9 @@ class EnvUI:
                 badge_text = "空值"
                 badge_color = COLOR_DANGER
 
-            dpg.add_text(badge_text, parent=row_id, color=badge_color)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=3)
+                dpg.add_text(badge_text, color=badge_color)
 
     def _on_row_selected(self, sender, app_data, user_data):
         self.selected_key = user_data
@@ -238,8 +247,8 @@ class EnvUI:
 
             dpg.add_spacer(height=4, parent=self.detail_container_id)
 
-            # 条目滚屏列表容器 (仅内部条目滚动，外侧面板无滚动条)
-            with dpg.child_window(height=340, border=True, no_scrollbar=False, parent=self.detail_container_id):
+            # 条目滚屏列表容器 (占满详情区绝大部分垂直空间，底部固定保留操作条)
+            with dpg.child_window(height=-85, border=True, no_scrollbar=False, parent=self.detail_container_id):
                 for idx, entry in enumerate(self.path_entries):
                     p_raw = entry['raw']
                     with dpg.group(horizontal=True):
@@ -256,7 +265,7 @@ class EnvUI:
                             stat_color = COLOR_WARNING
                             stat_tip = " (重复)"
 
-                        dpg.add_text(f"{p_raw}{stat_tip}", color=stat_color, wrap=220)
+                        dpg.add_text(f"{p_raw}{stat_tip}", color=stat_color, wrap=260)
 
                     with dpg.group(horizontal=True):
                         dpg.add_button(label="▲", callback=self._move_path_entry, user_data=(idx, -1), width=24)
@@ -268,17 +277,17 @@ class EnvUI:
 
                     dpg.add_separator()
 
-            dpg.add_spacer(height=6, parent=self.detail_container_id)
+            dpg.add_spacer(height=4, parent=self.detail_container_id)
 
-            # PATH 操作组
+            # PATH 操作组：固定停靠在变量详情区域的最底部
             with dpg.group(parent=self.detail_container_id):
                 with dpg.group(horizontal=True):
-                    dpg.add_input_text(tag="detail_path_add_input", hint="添加新路径...", width=230)
+                    dpg.add_input_text(tag="detail_path_add_input", hint="输入目录路径以添加新条目...", width=-140)
                     dpg.add_button(label="浏览...", callback=self._browse_path_folder)
-                    b_add = dpg.add_button(label="添加", callback=self._add_path_entry)
+                    b_add = dpg.add_button(label="[+] 添加", callback=self._add_path_entry)
                     dpg.bind_item_theme(b_add, btn_primary)
 
-                dpg.add_spacer(height=4)
+                dpg.add_spacer(height=3)
                 with dpg.group(horizontal=True):
                     b_clean = dpg.add_button(label="一键清理无效与重复", callback=self._clean_path_oneclick)
                     dpg.bind_item_theme(b_clean, btn_danger)
@@ -521,14 +530,16 @@ class EnvUI:
                 dpg.bind_item_theme(b_del_yes, btn_danger)
                 dpg.add_button(label="取消", callback=lambda s, d: dpg.configure_item('modal_delete_env_confirm', show=False))
 
+        splitter_theme = create_splitter_theme()
+
         # =============================================================
-        # 双栏现代化架构：左侧主工作区 (Table)，右侧连续详情区 (Details)
+        # 双栏现代化架构：左侧主工作区 (Table)，中间拖拽分割条，右侧连续详情区 (Details)
         # =============================================================
         with dpg.group(horizontal=True):
             # ---------------------------------------------------------
-            # 1. 中部主工作区 (Middle Content Workspace) - 禁用外层滚动条
+            # 1. 中部主工作区 (Middle Content Workspace) - 动态自适应宽度
             # ---------------------------------------------------------
-            with dpg.child_window(width=-390, height=-1, border=True, no_scrollbar=True):
+            with dpg.child_window(tag=self.left_pane_tag, width=-self.detail_width - 12, height=-1, border=True, no_scrollbar=True):
                 # 面包屑与大标题 (设计稿一致)
                 dpg.add_text("工作区 > 环境变量", color=COLOR_MUTED)
                 dpg.add_spacer(height=2)
@@ -587,12 +598,40 @@ class EnvUI:
                     self.status_banner_id = dpg.add_text("当前没有待应用的更改，修改将先在此预览并生成快照。", color=COLOR_MUTED)
 
             # ---------------------------------------------------------
-            # 2. 右侧连续编辑与详情栏 (Right Details Panel - 禁用外层滚动条)
+            # 2. 中间可拖拽分割条 (Draggable Splitter Bar)
             # ---------------------------------------------------------
-            with dpg.child_window(width=-1, height=-1, border=True, no_scrollbar=True):
+            b_split = dpg.add_button(
+                tag=self.splitter_tag,
+                label="",
+                width=8,
+                height=-1
+            )
+            dpg.bind_item_theme(b_split, splitter_theme)
+
+            # ---------------------------------------------------------
+            # 3. 右侧连续编辑与详情栏 (Right Details Panel)
+            # ---------------------------------------------------------
+            with dpg.child_window(tag=self.right_pane_tag, width=self.detail_width, height=-1, border=True, no_scrollbar=True):
                 self.detail_container_id = dpg.add_group()
 
+        # 注册拖拽事件监听器
+        if not dpg.does_item_exist('env_splitter_handler_reg'):
+            with dpg.handler_registry(tag='env_splitter_handler_reg'):
+                dpg.add_mouse_drag_handler(button=0, threshold=0.0, callback=self._on_splitter_drag)
+
         self.refresh_vars()
+
+    def _on_splitter_drag(self, sender, app_data, user_data):
+        if dpg.does_item_exist(self.splitter_tag) and dpg.is_item_active(self.splitter_tag):
+            delta = dpg.get_mouse_drag_delta()
+            dx = delta[0]
+            if dx != 0:
+                new_w = max(260, min(800, self.detail_width - int(dx)))
+                if new_w != self.detail_width:
+                    self.detail_width = new_w
+                    dpg.set_item_width(self.left_pane_tag, -self.detail_width - 12)
+                    dpg.set_item_width(self.right_pane_tag, self.detail_width)
+                dpg.reset_mouse_drag_delta()
 
     def _switch_scope(self, scope_str: str):
         self.scope = scope_str

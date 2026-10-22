@@ -64,8 +64,8 @@ class SkillsViewUI:
 
         # 技能卡片列表区（左/上）与执行控制台（右/下）
         with dpg.group(horizontal=True):
-            # 左侧：技能卡片列表 (自适应高度)
-            with dpg.child_window(width=540, height=-10, border=True):
+            # 左侧：技能卡片列表 (宽度拓宽至 630px，卡片全面展现完整内容不挤压)
+            with dpg.child_window(width=630, height=-10, border=True):
                 self.cards_container_id = dpg.add_group()
                 self._render_skill_cards()
 
@@ -98,25 +98,40 @@ class SkillsViewUI:
             if self.category_filter != "全部" and skill.category != self.category_filter:
                 continue
 
-            with dpg.child_window(parent=self.cards_container_id, height=120, border=True, no_scrollbar=True):
+            # 独立技能卡片：充足空间完整展示描述、标识、机制与操作，杜绝拥挤
+            with dpg.child_window(parent=self.cards_container_id, height=165, border=True, no_scrollbar=True):
+                # 标题栏：图标 + 名称 + 分类徽标 + 版本作者
                 with dpg.group(horizontal=True):
                     dpg.add_text(f"{skill.icon} {skill.name}", color=COLOR_PRIMARY)
-                    dpg.add_spacer(width=10)
-                    dpg.add_text(f"[{skill.category}]", color=COLOR_MUTED)
+                    dpg.add_spacer(width=8)
+                    dpg.add_text(f"[{skill.category}]", color=COLOR_SUCCESS)
+                    dpg.add_spacer(width=8)
+                    ver = getattr(skill, 'version', '1.0')
+                    auth = getattr(skill, 'author', 'EnvKit')
+                    dpg.add_text(f"v{ver} · {auth}", color=COLOR_MUTED)
 
-                dpg.add_text(skill.description, wrap=500)
-                dpg.add_spacer(height=2)
+                dpg.add_spacer(height=3)
 
+                # 完整功能描述（完整展开显示，不截断不压缩）
+                dpg.add_text(skill.description, wrap=590)
+                dpg.add_spacer(height=4)
+
+                # 技能元数据与安全机制提示
+                dpg.add_text(f"标识: {skill.id}   |   安全保障: 执行前自动生成快照备份，支持一键还原", color=COLOR_MUTED, wrap=590)
+                dpg.add_spacer(height=6)
+
+                # 动作按钮
                 with dpg.group(horizontal=True):
-                    dpg.add_button(
+                    b_check = dpg.add_button(
                         label="[排查] 仅体检排查 (Dry Run)",
                         parent=dpg.last_container(),
                         callback=self._run_single_skill,
                         user_data=(skill.id, True)
                     )
+                    dpg.bind_item_theme(b_check, btn_dry)
                     
                     b_fix = dpg.add_button(
-                        label="[修复] 一键执行修复",
+                        label="[修复] 一键执行修复 (Auto Fix)",
                         parent=dpg.last_container(),
                         callback=self._run_single_skill,
                         user_data=(skill.id, False)

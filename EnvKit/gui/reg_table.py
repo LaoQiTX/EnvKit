@@ -9,7 +9,7 @@ from utils.win_utils import choose_file, open_in_explorer
 from utils.path_check import normalize_path
 from gui.theme import (
     COLOR_SUCCESS, COLOR_DANGER, COLOR_WARNING, COLOR_MUTED,
-    COLOR_PRIMARY, create_button_theme
+    COLOR_PRIMARY, create_button_theme, create_splitter_theme
 )
 
 class RegUI:
@@ -26,10 +26,14 @@ class RegUI:
         self.search_filter = ""
         self.items_cache = []
         
-        # 详情面板状态
+        # 详情面板状态与可拖拽分割条
         self.selected_item = None
         self.is_new_mode = False
         self.detail_container_id = None
+        self.detail_width = 410
+        self.left_pane_tag = 'reg_left_pane'
+        self.right_pane_tag = 'reg_right_pane'
+        self.splitter_tag = 'reg_splitter_bar'
 
     def _list_values(self):
         subkey = dpg.get_value('reg_address_input').strip() if dpg.does_item_exist('reg_address_input') else 'Environment'
@@ -76,22 +80,27 @@ class RegUI:
             row_id = dpg.add_table_row(parent=self.table_id)
             is_sel = (self.selected_item and self.selected_item['name'] == name and not self.is_new_mode)
 
-            # 1. 名称（单击整行在右侧直接连续编辑）
+            # 1. 名称（单击整行在右侧直接连续编辑，行高 34px 覆盖全单元格）
             dpg.add_selectable(
                 label=name if name else "(默认)",
                 parent=row_id,
                 span_columns=True,
+                height=34,
                 default_value=is_sel,
                 callback=self._on_row_selected,
                 user_data=item
             )
 
-            # 2. 类型
-            dpg.add_text(t_str, parent=row_id, color=COLOR_MUTED)
+            # 2. 类型 (垂直居中对齐)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=3)
+                dpg.add_text(t_str, color=COLOR_MUTED)
 
-            # 3. 数据
+            # 3. 数据 (垂直居中对齐)
             disp_val = val if len(val) <= 80 else val[:77] + "..."
-            dpg.add_text(disp_val, parent=row_id)
+            with dpg.group(parent=row_id):
+                dpg.add_spacer(height=3)
+                dpg.add_text(disp_val)
 
         if self.footer_count_id and dpg.does_item_exist(self.footer_count_id):
             dpg.set_value(self.footer_count_id, f"{len(self.items_cache)} 个值")
@@ -348,14 +357,16 @@ class RegUI:
                 dpg.bind_item_theme(b_del_yes, btn_danger)
                 dpg.add_button(label="取消", callback=lambda s, d: dpg.configure_item('modal_delete_reg_confirm', show=False))
 
+        splitter_theme = create_splitter_theme()
+
         # =============================================================
-        # 双栏现代化架构：左侧主工作区 (Values)，右侧连续详情区 (Details)
+        # 双栏现代化架构：左侧主工作区 (Values)，中间拖拽分割条，右侧连续详情区 (Details)
         # =============================================================
         with dpg.group(horizontal=True):
             # ---------------------------------------------------------
-            # 1. 中部主工作区 (Middle Content Workspace) - 禁用外层滚动条
+            # 1. 中部主工作区 (Middle Content Workspace) - 动态自适应宽度
             # ---------------------------------------------------------
-            with dpg.child_window(width=-390, height=-1, border=True, no_scrollbar=True):
+            with dpg.child_window(tag=self.left_pane_tag, width=-self.detail_width - 12, height=-1, border=True, no_scrollbar=True):
                 # 面包屑与大标题
                 dpg.add_text("工作区 > 注册表", color=COLOR_MUTED)
                 dpg.add_spacer(height=2)
@@ -430,13 +441,40 @@ class RegUI:
                     self.status_banner_id = dpg.add_text("当前没有待应用的更改 | 应用前将自动备份", color=COLOR_MUTED)
 
             # ---------------------------------------------------------
-            # 2. 右侧连续编辑与详情栏 (Right Details Panel)
+            # 2. 中间可拖拽分割条 (Draggable Splitter Bar)
             # ---------------------------------------------------------
-            with dpg.child_window(width=-1, height=-1, border=True, no_scrollbar=True):
-                self.detail_container_id = dpg.add_group()
+            b_split = dpg.add_button(
+                tag=self.splitter_tag,
+                label="",
+                width=8,
+                height=-1
+            )
+            dpg.bind_item_theme(b_split, splitter_theme)
+
+            # ---------------------------------------------------------
+            # 3. 右侧连续编辑与详情栏 (Right Details Panel)
+            # ---------------------------------------------------------
+            with dpg.child_window(tag=self.right_pane_tag, width=self.detail_width, height=-1, border=True, no_scrollbar=True):
                 self.detail_container_id = dpg.add_group()
 
+        # 注册拖拽事件监听器
+        if not dpg.does_item_exist('reg_splitter_handler_reg'):
+            with dpg.handler_registry(tag='reg_splitter_handler_reg'):
+                dpg.add_mouse_drag_handler(button=0, threshold=0.0, callback=self._on_splitter_drag)
+
         self._list_values()
+
+    def _on_splitter_drag(self, sender, app_data, user_data):
+        if dpg.does_item_exist(self.splitter_tag) and dpg.is_item_active(self.splitter_tag):
+            delta = dpg.get_mouse_drag_delta()
+            dx = delta[0]
+            if dx != 0:
+                new_w = max(260, min(800, self.detail_width - int(dx)))
+                if new_w != self.detail_width:
+                    self.detail_width = new_w
+                    dpg.set_item_width(self.left_pane_tag, -self.detail_width - 12)
+                    dpg.set_item_width(self.right_pane_tag, self.detail_width)
+                dpg.reset_mouse_drag_delta()
 
     def _switch_root(self, root_str: str):
         self.root = root_str

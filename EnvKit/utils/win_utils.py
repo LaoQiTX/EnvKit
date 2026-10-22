@@ -27,7 +27,13 @@ def restart_as_admin():
         
         ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, params, None, 1)
         if ret > 32:
-            sys.exit(0)
+            # 提权成功：关闭当前非管理员进程窗口，只保留提权后的新窗口
+            try:
+                import dearpygui.dearpygui as dpg
+                dpg.stop_dearpygui()
+            except Exception:
+                pass
+            os._exit(0)
     except Exception as e:
         return str(e)
     return None
