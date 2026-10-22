@@ -1,12 +1,26 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+import sys
 
+block_cipher = None
 
 a = Analysis(
-    ['EnvKit\\main.py'],
-    pathex=[],
+    ['EnvKit/main.py'],
+    pathex=['EnvKit'],
     binaries=[],
-    datas=[('EnvKit/models/model_config.json', 'models')],
-    hiddenimports=[],
+    datas=[
+        ('EnvKit/models/model_config.json', 'models'),
+        ('EnvKit/skills', 'skills')
+    ],
+    hiddenimports=[
+        'dearpygui',
+        'dearpygui.dearpygui',
+        'tkinter',
+        'tkinter.filedialog',
+        'ctypes',
+        'ctypes.wintypes',
+        'winreg'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -14,7 +28,12 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
-pyz = PYZ(a.pure)
+a.binaries = [
+    x for x in a.binaries
+    if not x[0].lower().startswith('msvcp140')
+    and not x[0].lower().startswith('vcruntime140')
+]
+pyz = PYZ(a.pure, cipher=block_cipher)
 
 exe = EXE(
     pyz,
@@ -29,7 +48,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

@@ -1,214 +1,328 @@
-import dearpygui.dearpygui as dpg
-from core.reg_manager import RegManager
-from core.analyzer import Analyzer
-import json
-from core.backup import backup, restore
-from pathlib import Path
 import os
+import dearpygui.dearpygui as dpg
+from typing import List, Dict, Any, Optional
+from core.reg_manager import RegManager, PRESET_KEYS, TYPE_MAP, STR_TO_TYPE
+from core.analyzer import Analyzer
+from core.backup import backup, restore
+from utils.path_helper import get_backup_dir
+from utils.win_utils import choose_file, open_in_explorer
 from utils.path_check import normalize_path
-import re
-import sys
+from gui.theme import (
+    COLOR_SUCCESS, COLOR_DANGER, COLOR_WARNING, COLOR_MUTED,
+    COLOR_PRIMARY, create_button_theme
+)
 
 class RegUI:
-    def __init__(self, analyzer: Analyzer):
+    def __init__(self, analyzer: Analyzer, on_send_to_diagnose=None):
         self.root = 'HKCU'
         self.m = RegManager(self.root)
         self.analyzer = analyzer
+        self.on_send_to_diagnose = on_send_to_diagnose
         self.table_id = None
-        self.message_id = None
-        self.pending_reg_name = None
-        self.backup_reg_message_id = None
-        if getattr(sys, 'frozen', False):
-            self.base_dir = Path(sys.argv[0]).resolve().parent
-        else:
-            self.base_dir = Path(__file__).resolve().parents[1]
+        self.status_message_id = None
+        self.pending_delete_name = None
+        self.search_filter = ""
+        self.items_cache = []
 
     def build(self):
-        with dpg.window(modal=True, show=False, tag='confirm_delete_reg', no_move=True, no_resize=True):
-            dpg.add_text(tag='confirm_delete_reg_text')
+        btn_primary = create_button_theme((37, 99, 235), (59, 130, 246), (29, 78, 216))
+        btn_danger = create_button_theme((220, 38, 38), (239, 68, 68), (185, 28, 28))
+        btn_success = create_button_theme((16, 185, 129), (52, 211, 153), (5, 150, 105))
+
+        # 删除确认弹窗
+        with dpg.window(modal=True, show=False, tag='modal_delete_reg_confirm', no_move=True, no_resize=True, width=420, height=190):
+            dpg.add_text("⚠️ 确认删除注册表键值？", color=COLOR_WARNING)
+            dpg.add_separator()
+            dpg.add_text(tag='modal_delete_reg_text', wrap=390)
+            dpg.add_spacer(height=10)
             with dpg.group(horizontal=True):
-                dpg.add_button(label='确定删除', callback=self._confirm_delete_reg_yes)
-                dpg.add_button(label='取消', callback=lambda s,d: dpg.configure_item('confirm_delete_reg', show=False))
-        # 文件对话框延迟创建，避免打包环境初始化时可能的窗口库问题
-        dpg.add_button(label='选择备份文件恢复子键', callback=self._open_reg_restore_dialog)
-        with dpg.group():
-            dpg.add_radio_button(tag='reg_root', items=['HKCU', 'HKLM'], default_value='HKCU', callback=self._on_root)
-            dpg.add_input_text(tag='reg_subkey', label='子键', default_value=self._default_subkey())
-            dpg.add_button(label='列出值', callback=self._list_values)
-            self.table_id = dpg.add_table(header_row=True)
-            dpg.add_table_column(label='名称', parent=self.table_id)
-            dpg.add_table_column(label='值', parent=self.table_id)
-            dpg.add_input_text(tag='reg_name', label='名称')
-            dpg.add_input_text(tag='reg_value', label='值')
-            dpg.add_button(label='设置值', callback=self._set_value)
-            dpg.add_button(label='删除值', callback=self._del_value)
-            dpg.add_input_text(tag='reg_select_names', label='多选名称,逗号分隔')
-            dpg.add_button(label='分析选中值', callback=self._analyze_selected)
-            dpg.add_input_text(tag='analysis_output_reg', label='分析结果', multiline=True, readonly=True)
-            dpg.add_button(label='备份当前子键', callback=self._backup_subkey)
-            self.message_id = dpg.add_text('')
-            self.backup_reg_message_id = dpg.add_text('')
+                b_del_yes = dpg.add_button(label="确认删除", callback=self._do_delete_confirmed)
+                dpg.bind_item_theme(b_del_yes, btn_danger)
+                dpg.add_button(label="取消", callback=lambda s, d: dpg.configure_item('modal_delete_reg_confirm', show=False))
 
-    def _on_root(self, sender, data):
-        self.root = dpg.get_value('reg_root')
+        # 顶部配置栏
+        with dpg.group(horizontal=True):
+            dpg.add_text("根键:")
+            dpg.add_radio_button(
+                items=['HKCU (当前用户)', 'HKLM (本地计算机)'],
+                default_value='HKCU (当前用户)',
+                horizontal=True,
+                tag='reg_root_radio',
+                callback=self._on_root_change
+            )
+            dpg.add_spacer(width=20)
+            dpg.add_text("常用快捷子键:")
+            preset_labels = [p['label'] for p in PRESET_KEYS]
+            dpg.add_combo(
+                items=preset_labels,
+                default_value=preset_labels[0],
+                width=240,
+                callback=self._on_preset_selected
+            )
+
+        dpg.add_spacer(height=4)
+
+        with dpg.group(horizontal=True):
+            dpg.add_text("子键路径:")
+            dpg.add_input_text(tag='reg_subkey_input', default_value='Environment', width=520)
+            b_list = dpg.add_button(label="查询列出值", callback=self._list_values)
+            dpg.bind_item_theme(b_list, btn_primary)
+            
+            b_bak = dpg.add_button(label="备份当前子键", callback=self._backup_subkey)
+            dpg.bind_item_theme(b_bak, btn_success)
+            
+            dpg.add_button(label="从备份恢复...", callback=self._restore_subkey)
+
+        dpg.add_spacer(height=4)
+
+        with dpg.group(horizontal=True):
+            dpg.add_text("过滤搜索:")
+            dpg.add_input_text(hint="输入名称或内容筛选...", callback=self._on_search_change, width=240)
+
+        dpg.add_spacer(height=6)
+
+        # 注册表键值列表
+        with dpg.child_window(height=350, border=True):
+            self.table_id = dpg.add_table(
+                header_row=True,
+                resizable=True,
+                policy=dpg.mvTable_SizingStretchProp,
+                row_background=True,
+                borders_innerH=True,
+                borders_outerH=True,
+                borders_innerV=True,
+                borders_outerV=True
+            )
+            dpg.add_table_column(label="名称 (双击编辑)", width_stretch=True, init_width_or_weight=220, parent=self.table_id)
+            dpg.add_table_column(label="类型", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
+            dpg.add_table_column(label="数值状态", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
+            dpg.add_table_column(label="数值数据 (Value Data)", width_stretch=True, init_width_or_weight=450, parent=self.table_id)
+
+        dpg.add_spacer(height=6)
+
+        # 底部编辑卡片
+        with dpg.child_window(height=180, border=True):
+            dpg.add_text("📝 注册表键值编辑（新建/修改/删除）：", color=COLOR_PRIMARY)
+            with dpg.group(horizontal=True):
+                dpg.add_text("名称:")
+                dpg.add_input_text(tag="reg_val_name", width=200)
+                dpg.add_text("类型:")
+                dpg.add_combo(tag="reg_val_type", items=list(STR_TO_TYPE.keys()), default_value='REG_SZ', width=150)
+                dpg.add_text("数值数据:")
+                dpg.add_input_text(tag="reg_val_data", width=400)
+
+            dpg.add_spacer(height=6)
+            with dpg.group(horizontal=True):
+                b_set = dpg.add_button(label="设置 / 保存键值", callback=self._set_value)
+                dpg.bind_item_theme(b_set, btn_primary)
+
+                b_del = dpg.add_button(label="删除该键值", callback=self._request_delete)
+                dpg.bind_item_theme(b_del, btn_danger)
+
+                dpg.add_button(label="清空输入", callback=self._clear_inputs)
+                
+                if self.on_send_to_diagnose:
+                    dpg.add_button(label="发送到 AI 深入分析", callback=self._send_to_diagnose)
+
+            self.status_message_id = dpg.add_text("", color=COLOR_SUCCESS)
+
+        self._list_values()
+
+    def _on_root_change(self, sender, data):
+        self.root = 'HKCU' if 'HKCU' in data else 'HKLM'
         self.m = RegManager(self.root)
-        dpg.set_value('reg_subkey', self._default_subkey())
-
-    def _list_values(self, sender, data):
-        subkey = dpg.get_value('reg_subkey')
-        if self.table_id:
-            children = dpg.get_item_children(self.table_id, 1) or []
-            for c in children:
-                dpg.delete_item(c)
-        items = self.m.list_values(subkey)
-        value_counts = {}
-        for it in items:
-            vstr = str(it['value'])
-            value_counts[vstr] = value_counts.get(vstr, 0) + 1
-        if not items:
-            dpg.set_value(self.message_id, '无法列出，可能路径不存在或无权限')
+        if self.root == 'HKLM':
+            dpg.set_value('reg_subkey_input', r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment')
         else:
-            dpg.set_value(self.message_id, '')
-            for item in items:
-                row_id = dpg.add_table_row(parent=self.table_id)
-                selectable_id = dpg.add_selectable(label=item['name'], parent=row_id)
-                val = item['value']
-                vstr = str(val)
-                is_path_like = isinstance(val, str) and ("\\" in val or "/" in val)
-                exists = False
-                if is_path_like:
-                    try:
-                        exists = os.path.exists(normalize_path(val))
-                    except Exception:
-                        exists = False
-                duplicate_value = value_counts.get(vstr, 0) > 1
-                color = (255, 255, 255, 255)
-                if is_path_like and not exists and duplicate_value:
-                    color = (199, 21, 133, 255)
-                elif is_path_like and not exists:
-                    color = (220, 50, 47, 255)
-                elif duplicate_value:
-                    color = (255, 165, 0, 255)
-                dpg.add_text(vstr, parent=row_id, color=color)
-                handler = dpg.add_item_handler_registry()
-                dpg.add_item_clicked_handler(parent=handler, callback=self._on_reg_row_click, user_data={'name': item['name'], 'value': item['value']})
-                dpg.bind_item_handler_registry(selectable_id, handler)
+            dpg.set_value('reg_subkey_input', r'Environment')
+        self._list_values()
+
+    def _on_preset_selected(self, sender, data):
+        preset = next((p for p in PRESET_KEYS if p['label'] == data), None)
+        if preset:
+            self.root = preset['root']
+            self.m = RegManager(self.root)
+            radio_val = 'HKCU (当前用户)' if self.root == 'HKCU' else 'HKLM (本地计算机)'
+            dpg.set_value('reg_root_radio', radio_val)
+            dpg.set_value('reg_subkey_input', preset['subkey'])
+            self._list_values()
+
+    def _on_search_change(self, sender, data):
+        self.search_filter = data
+        self._render_rows()
+
+    def _clear_inputs(self, sender=None, data=None):
+        dpg.set_value("reg_val_name", "")
+        dpg.set_value("reg_val_data", "")
+
+    def _list_values(self, sender=None, data=None):
+        subkey = dpg.get_value('reg_subkey_input').strip()
+        try:
+            self.items_cache = self.m.list_values(subkey)
+            dpg.set_value(self.status_message_id, f"成功获取 {len(self.items_cache)} 个注册表项")
+        except PermissionError:
+            self.items_cache = []
+            dpg.set_value(self.status_message_id, "权限不足：读取此注册表子键需要管理员权限！")
+        except Exception as e:
+            self.items_cache = []
+            dpg.set_value(self.status_message_id, f"查询失败: {e}")
+            
+        self._render_rows()
+
+    def _render_rows(self):
+        if not self.table_id or not dpg.does_item_exist(self.table_id):
+            return
+            
+        children = dpg.get_item_children(self.table_id, 1) or []
+        for c in children:
+            dpg.delete_item(c)
+
+        flt = self.search_filter.lower().strip()
+
+        for item in self.items_cache:
+            name = item['name']
+            val = item['value']
+            val_str = str(val)
+            
+            if flt and (flt not in name.lower() and flt not in val_str.lower()):
+                continue
+
+            row_id = dpg.add_table_row(parent=self.table_id)
+            
+            # 名称
+            sel_id = dpg.add_selectable(label=name, parent=row_id)
+            handler = dpg.add_item_handler_registry()
+            dpg.add_item_clicked_handler(
+                parent=handler,
+                callback=self._on_row_click,
+                user_data=item
+            )
+            dpg.bind_item_handler_registry(sel_id, handler)
+
+            # 类型
+            dpg.add_text(item.get('type_str', 'REG_SZ'), parent=row_id, color=COLOR_MUTED)
+
+            # 状态检测
+            badge = "常规"
+            badge_color = COLOR_MUTED
+            is_path_like = isinstance(val, str) and ('\\' in val or '/' in val)
+            if is_path_like:
+                norm = normalize_path(val)
+                if os.path.exists(norm):
+                    badge = "指向存在文件"
+                    badge_color = COLOR_SUCCESS
+                else:
+                    badge = "路径不存在"
+                    badge_color = COLOR_DANGER
+
+            dpg.add_text(badge, parent=row_id, color=badge_color)
+
+            # 数据值
+            disp_val = val_str if len(val_str) <= 120 else val_str[:117] + "..."
+            dpg.add_text(disp_val, parent=row_id)
+
+    def _on_row_click(self, sender, app_data, user_data):
+        name = user_data['name']
+        val = user_data['value']
+        vtype_str = user_data.get('type_str', 'REG_SZ')
+        dpg.set_value("reg_val_name", name)
+        dpg.set_value("reg_val_data", str(val))
+        if vtype_str in STR_TO_TYPE:
+            dpg.set_value("reg_val_type", vtype_str)
 
     def _set_value(self, sender, data):
-        subkey = dpg.get_value('reg_subkey')
-        name = dpg.get_value('reg_name')
-        value = dpg.get_value('reg_value')
-        if subkey and name:
-            try:
-                self.m.set_value(subkey, name, value)
-                dpg.set_value(self.message_id, '已设置')
-                self._list_values(sender, data)
-            except Exception:
-                dpg.set_value(self.message_id, '写入失败，需管理员权限或路径错误')
-        dpg.set_value('reg_name', '')
-        dpg.set_value('reg_value', '')
+        subkey = dpg.get_value('reg_subkey_input').strip()
+        name = dpg.get_value('reg_val_name').strip()
+        val = dpg.get_value('reg_val_data')
+        t_str = dpg.get_value('reg_val_type')
+        vtype = STR_TO_TYPE.get(t_str, 1)
 
-    def _del_value(self, sender, data):
-        subkey = dpg.get_value('reg_subkey')
-        name = dpg.get_value('reg_name')
-        if subkey and name:
-            self.pending_reg_name = name
-            val, _ = self.m.get_value(subkey, name)
-            text = self._build_reg_delete_warning(subkey, name, val) or '确认删除该注册表值?'
-            dpg.set_value('confirm_delete_reg_text', text)
-            dpg.configure_item('confirm_delete_reg', show=True)
-        dpg.set_value('reg_name', '')
-        dpg.set_value('reg_value', '')
+        if not subkey or not name:
+            dpg.set_value(self.status_message_id, "错误：子键路径和名称均不能为空！")
+            return
+            
+        try:
+            self.m.set_value(subkey, name, val, vtype)
+            dpg.set_value(self.status_message_id, f"成功保存注册表键值 [{name}]！")
+            self._list_values()
+        except PermissionError:
+            dpg.set_value(self.status_message_id, "权限不足：修改此项需要管理员权限！")
+        except Exception as e:
+            dpg.set_value(self.status_message_id, f"保存失败: {e}")
 
-    def _analyze_selected(self, sender, data):
-        subkey = dpg.get_value('reg_subkey')
-        names = dpg.get_value('reg_select_names')
-        items = []
-        if names:
-            for n in [x.strip() for x in names.split(',') if x.strip()]:
-                v, _ = self.m.get_value(subkey, n)
-                items.append({'kind': 'reg', 'key': f'{self.root}\\{subkey}\\{n}', 'value': v})
-        res = self.analyzer.analyze(items)
-        dpg.set_value('analysis_output_reg', json.dumps(res, ensure_ascii=False))
-        dpg.set_value('reg_select_names', '')
+    def _request_delete(self, sender, data):
+        name = dpg.get_value('reg_val_name').strip()
+        subkey = dpg.get_value('reg_subkey_input').strip()
+        if not name:
+            dpg.set_value(self.status_message_id, "请先选择要删除的注册表键值！")
+            return
 
-    def _on_reg_row_click(self, sender, app_data, user_data):
-        if dpg.is_mouse_button_double_clicked(dpg.mvMouseButton_Left):
-            name = user_data['name']
-            value = user_data['value']
-            dpg.set_value('reg_name', name)
-            dpg.set_value('reg_value', str(value))
-            cur = dpg.get_value('reg_select_names') or ''
-            names = [x.strip() for x in cur.split(',') if x.strip()]
-            if name not in names:
-                names.append(name)
-            dpg.set_value('reg_select_names', ','.join(names))
+        self.pending_delete_name = name
+        text = f"确定要永久删除注册表项 [{self.root}\\{subkey}] 下的键值 [{name}] 吗？\n请确认该键值非关键系统依赖。"
+        dpg.set_value('modal_delete_reg_text', text)
+        dpg.configure_item('modal_delete_reg_confirm', show=True)
+
+    def _do_delete_confirmed(self, sender, data):
+        name = self.pending_delete_name
+        subkey = dpg.get_value('reg_subkey_input').strip()
+        dpg.configure_item('modal_delete_reg_confirm', show=False)
+        if not name:
+            return
+
+        try:
+            self.m.delete_value(subkey, name)
+            self._clear_inputs()
+            dpg.set_value(self.status_message_id, f"成功删除注册表键值 [{name}]！")
+            self._list_values()
+        except PermissionError:
+            dpg.set_value(self.status_message_id, "权限不足：删除此键值需要管理员权限！")
+        except Exception as e:
+            dpg.set_value(self.status_message_id, f"删除失败: {e}")
+        finally:
+            self.pending_delete_name = None
 
     def _backup_subkey(self, sender, data):
-        subkey = dpg.get_value('reg_subkey')
+        subkey = dpg.get_value('reg_subkey_input').strip()
         items = self.m.list_values(subkey)
-        reg_data = {f'{self.root}\\{subkey}\\{i["name"]}': i['value'] for i in items}
-        out_dir = str(self.base_dir / '.backup')
+        reg_map = {f"{self.root}\\{subkey}\\{i['name']}": {'value': i['value'], 'type': i['type']} for i in items}
         meta = {'root': self.root, 'subkey': subkey}
-        path = backup({}, reg_data, out_dir, category='reg', meta=meta)
-        dpg.set_value(self.backup_reg_message_id, f'已备份: {path}')
+        path = backup({}, reg_map, category='reg', meta=meta)
+        dpg.set_value(self.status_message_id, f"当前注册表子键已备份至: {path}")
 
-    def _reg_restore_selected(self, sender, app_data):
-        fp = app_data.get('file_path_name') if isinstance(app_data, dict) else None
-        if not fp:
+    def _restore_subkey(self, sender, data):
+        initial_dir = str(get_backup_dir())
+        chosen = choose_file(
+            initial_dir=initial_dir,
+            file_types=[("EnvKit 注册表备份 (*.json)", "*.json"), ("所有文件", "*.*")],
+            title="选择要恢复的注册表备份文件"
+        )
+        if not chosen:
             return
-        j = restore(fp)
-        reg_data = j.get('reg', {})
-        for k, v in reg_data.items():
-            if k.startswith(f'{self.root}\\'):
-                parts = k.split('\\')
-                sub = '\\'.join(parts[1:-1])
-                name = parts[-1]
-                self.m.set_value(sub, name, v)
-        self._list_values(sender, app_data)
+            
+        try:
+            data = restore(chosen)
+            reg_map = data.get('reg', {})
+            restored = 0
+            for full_key, item_val in reg_map.items():
+                if full_key.startswith(f"{self.root}\\"):
+                    parts = full_key.split('\\')
+                    sub = '\\'.join(parts[1:-1])
+                    name = parts[-1]
+                    val = item_val.get('value') if isinstance(item_val, dict) else item_val
+                    vtype = item_val.get('type', 1) if isinstance(item_val, dict) else 1
+                    self.m.set_value(sub, name, val, vtype)
+                    restored += 1
+            dpg.set_value(self.status_message_id, f"成功从备份恢复了 {restored} 个注册表键值！")
+            self._list_values()
+        except Exception as e:
+            dpg.set_value(self.status_message_id, f"恢复失败: {e}")
 
-    def _open_reg_restore_dialog(self, sender, data):
-        if not dpg.does_item_exist('reg_restore_dialog'):
-            with dpg.file_dialog(directory_selector=False, show=False, tag='reg_restore_dialog', callback=self._reg_restore_selected):
-                dpg.add_file_extension('.json')
-        dpg.configure_item('reg_restore_dialog', show=True)
-
-    def _default_subkey(self) -> str:
-        if self.root == 'HKLM':
-            return 'SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment'
-        return 'Environment'
-
-    def _confirm_delete_reg_yes(self, sender, data):
-        subkey = dpg.get_value('reg_subkey')
-        if self.pending_reg_name:
-            try:
-                self.m.delete_value(subkey, self.pending_reg_name)
-                dpg.set_value(self.message_id, '已删除')
-                self._list_values(sender, data)
-            except Exception:
-                dpg.set_value(self.message_id, '删除失败，需管理员权限或路径错误')
-            dpg.configure_item('confirm_delete_reg', show=False)
-            self.pending_reg_name = None
-
-    def _build_reg_delete_warning(self, subkey: str, name: str, value):
-        reasons = []
-        critical_names = {'Path','PATH','TEMP','TMP','JAVA_HOME','PYTHONPATH'}
-        if name in critical_names:
-            reasons.append('关键名称')
-        critical_keys = ['Environment','SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment','SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run','SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce']
-        for ck in critical_keys:
-            if subkey.lower() == ck.lower():
-                reasons.append('关键子键')
-                break
-        if value is not None:
-            if isinstance(value, str) and ('\\' in value or '/' in value):
-                try:
-                    if os.path.exists(normalize_path(value)):
-                        reasons.append('指向存在路径')
-                except Exception:
-                    pass
-            if isinstance(value, str) and re.search(r'%[^%]+%', value):
-                reasons.append('包含变量引用')
-        if reasons:
-            return '该注册表值谨慎删除：' + '，'.join(reasons) + '。是否继续?'
-        return None
+    def _send_to_diagnose(self, sender, data):
+        subkey = dpg.get_value('reg_subkey_input').strip()
+        name = dpg.get_value('reg_val_name').strip()
+        val = dpg.get_value('reg_val_data')
+        if not name:
+            dpg.set_value(self.status_message_id, "请先选择一个键值进行分析！")
+            return
+        if self.on_send_to_diagnose:
+            self.on_send_to_diagnose([{'kind': 'reg', 'key': f"{self.root}\\{subkey}\\{name}", 'value': val}])

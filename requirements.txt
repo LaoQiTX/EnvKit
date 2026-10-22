@@ -1,0 +1,2 @@
+dearpygui>=2.1.0
+pytest>=7.0.0

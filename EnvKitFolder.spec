@@ -1,12 +1,26 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+import sys
 
+block_cipher = None
 
 a = Analysis(
-    ['EnvKit\\main.py'],
-    pathex=[],
+    ['EnvKit/main.py'],
+    pathex=['EnvKit'],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=[
+        ('EnvKit/models/model_config.json', 'models'),
+        ('EnvKit/skills', 'skills')
+    ],
+    hiddenimports=[
+        'dearpygui',
+        'dearpygui.dearpygui',
+        'tkinter',
+        'tkinter.filedialog',
+        'ctypes',
+        'ctypes.wintypes',
+        'winreg'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -14,7 +28,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
-pyz = PYZ(a.pure)
+pyz = PYZ(a.pure, cipher=block_cipher)
 
 exe = EXE(
     pyz,
@@ -26,7 +40,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
