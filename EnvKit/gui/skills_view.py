@@ -62,10 +62,10 @@ class SkillsViewUI:
 
         dpg.add_spacer(height=6)
 
-        # 技能卡片列表区（左/上）与执行控制台（右/下）
+        # 技能卡片列表区（左侧充分利用宽屏自适应展开）与执行控制台（右侧固定适度宽度）
         with dpg.group(horizontal=True):
-            # 左侧：技能卡片列表 (宽度拓宽至 630px，卡片全面展现完整内容不挤压)
-            with dpg.child_window(width=630, height=-10, border=True):
+            # 左侧：技能卡片列表 (width=-480，右侧控制台仅预留 480px，其余全部空间留给卡片舒展展示)
+            with dpg.child_window(width=-480, height=-10, border=True):
                 self.cards_container_id = dpg.add_group()
                 self._render_skill_cards()
 
@@ -98,45 +98,51 @@ class SkillsViewUI:
             if self.category_filter != "全部" and skill.category != self.category_filter:
                 continue
 
-            # 独立技能卡片：充足空间完整展示描述、标识、机制与操作，杜绝拥挤
-            with dpg.child_window(parent=self.cards_container_id, height=165, border=True, no_scrollbar=True):
+            # 动态计算卡片高度，基于描述字数留足充分呼吸边距，彻底告别文字和按钮裁切
+            desc_len = len(skill.description)
+            card_h = 210 if desc_len < 55 else 235
+
+            # 独立技能卡片：充足空间完整展示描述、标识、机制与操作，杜绝拥挤与遮挡
+            with dpg.child_window(parent=self.cards_container_id, height=card_h, border=True, no_scrollbar=False):
                 # 标题栏：图标 + 名称 + 分类徽标 + 版本作者
                 with dpg.group(horizontal=True):
                     dpg.add_text(f"{skill.icon} {skill.name}", color=COLOR_PRIMARY)
-                    dpg.add_spacer(width=8)
+                    dpg.add_spacer(width=10)
                     dpg.add_text(f"[{skill.category}]", color=COLOR_SUCCESS)
-                    dpg.add_spacer(width=8)
+                    dpg.add_spacer(width=10)
                     ver = getattr(skill, 'version', '1.0')
                     auth = getattr(skill, 'author', 'EnvKit')
                     dpg.add_text(f"v{ver} · {auth}", color=COLOR_MUTED)
 
-                dpg.add_spacer(height=3)
+                dpg.add_spacer(height=5)
 
-                # 完整功能描述（完整展开显示，不截断不压缩）
-                dpg.add_text(skill.description, wrap=590)
-                dpg.add_spacer(height=4)
+                # 完整功能描述（自适应宽度展开，不挤压不截断）
+                dpg.add_text(skill.description, wrap=850)
+                dpg.add_spacer(height=5)
 
                 # 技能元数据与安全机制提示
-                dpg.add_text(f"标识: {skill.id}   |   安全保障: 执行前自动生成快照备份，支持一键还原", color=COLOR_MUTED, wrap=590)
-                dpg.add_spacer(height=6)
+                dpg.add_text(f"标识: {skill.id}   |   安全保障: 执行前自动生成快照备份，支持一键还原", color=COLOR_MUTED, wrap=850)
+                dpg.add_spacer(height=8)
 
-                # 动作按钮
+                # 动作按钮：留足底部边距，按钮清晰醒目无遮挡
                 with dpg.group(horizontal=True):
                     b_check = dpg.add_button(
                         label="[排查] 仅体检排查 (Dry Run)",
-                        parent=dpg.last_container(),
                         callback=self._run_single_skill,
                         user_data=(skill.id, True)
                     )
                     dpg.bind_item_theme(b_check, btn_dry)
                     
+                    dpg.add_spacer(width=10)
+
                     b_fix = dpg.add_button(
                         label="[修复] 一键执行修复 (Auto Fix)",
-                        parent=dpg.last_container(),
                         callback=self._run_single_skill,
                         user_data=(skill.id, False)
                     )
                     dpg.bind_item_theme(b_fix, btn_apply)
+
+            dpg.add_spacer(height=6, parent=self.cards_container_id)
 
     def _on_category_change(self, sender, data):
         self.category_filter = data
