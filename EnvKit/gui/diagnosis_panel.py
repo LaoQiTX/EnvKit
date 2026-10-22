@@ -26,7 +26,7 @@ class DiagnosisUI:
         btn_success = create_button_theme((16, 185, 129), (52, 211, 153), (5, 150, 105))
 
         with dpg.group(horizontal=True):
-            dpg.add_text("🤖 选择分析模型:")
+            dpg.add_text("[模型] 选择分析模型:")
             models = self.analyzer.models()
             model_names = [m['name'] for m in models]
             def_model = self.analyzer.client.default_model or (model_names[0] if model_names else 'local-rules')
@@ -41,13 +41,13 @@ class DiagnosisUI:
             )
 
             dpg.add_spacer(width=10)
-            b_full = dpg.add_button(label="⚡ 一键全系统体检", callback=self._scan_full_system)
+            b_full = dpg.add_button(label="[体检] 一键全系统体检", callback=self._scan_full_system)
             dpg.bind_item_theme(b_full, btn_primary)
 
-            b_path = dpg.add_button(label="🛣️ PATH 专项诊断", callback=self._scan_path_only)
+            b_path = dpg.add_button(label="[PATH] PATH 专项诊断", callback=self._scan_path_only)
             dpg.bind_item_theme(b_path, btn_success)
 
-            dpg.add_button(label="📋 复制分析报告", callback=self._copy_report)
+            dpg.add_button(label="[复制] 复制分析报告", callback=self._copy_report)
 
         dpg.add_spacer(height=6)
 

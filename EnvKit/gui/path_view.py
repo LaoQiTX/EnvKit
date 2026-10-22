@@ -14,6 +14,7 @@ class PathViewUI:
         self.path_entries = [] # list of dicts from analyze_paths
         self.search_filter = ""
         self.status_message_id = None
+        self.selected_idx = None
 
     def _get_manager(self) -> EnvManager:
         return EnvManager(self.get_scope())
@@ -54,8 +55,16 @@ class PathViewUI:
 
             row_id = dpg.add_table_row(parent=self.table_id)
             
-            # 1. 索引
-            dpg.add_text(f"#{idx + 1}", parent=row_id, color=COLOR_MUTED)
+            # 1. 序号与整行高亮选中
+            is_sel = (idx == self.selected_idx)
+            dpg.add_selectable(
+                label=f"#{idx + 1}",
+                parent=row_id,
+                span_columns=True,
+                default_value=is_sel,
+                callback=self._on_row_select,
+                user_data=(idx, raw)
+            )
             
             # 2. 状态标签
             badge_text = "有效"
@@ -88,8 +97,8 @@ class PathViewUI:
 
             # 5. 操作按钮组
             btn_group = dpg.add_group(horizontal=True, parent=row_id)
-            dpg.add_button(label="▲", parent=btn_group, callback=self._move_item, user_data=(idx, -1), width=24)
-            dpg.add_button(label="▼", parent=btn_group, callback=self._move_item, user_data=(idx, 1), width=24)
+            dpg.add_button(label="▲", parent=btn_group, callback=self._move_item, user_data=(idx, -1), width=28)
+            dpg.add_button(label="▼", parent=btn_group, callback=self._move_item, user_data=(idx, 1), width=28)
             dpg.add_button(label="置顶", parent=btn_group, callback=self._move_to_top, user_data=idx)
             
             if entry['exists']:
@@ -97,19 +106,26 @@ class PathViewUI:
                 
             dpg.add_button(label="删除", parent=btn_group, callback=self._delete_item, user_data=idx)
 
+    def _on_row_select(self, sender, app_data, user_data):
+        idx, raw = user_data
+        self.selected_idx = idx
+        dpg.set_value("path_add_input", raw)
+        if self.status_message_id and dpg.does_item_exist(self.status_message_id):
+            dpg.set_value(self.status_message_id, f"已选中第 #{idx + 1} 项，已填充至下方输入框。")
+
     def build(self):
-        btn_primary = create_button_theme((37, 99, 235), (59, 130, 246), (29, 78, 216))
-        btn_success = create_button_theme((16, 185, 129), (52, 211, 153), (5, 150, 105))
-        btn_danger = create_button_theme((220, 38, 38), (239, 68, 68), (185, 28, 28))
+        btn_primary = create_button_theme((37, 99, 235), (59, 130, 246), (29, 78, 216), text_color=(255, 255, 255))
+        btn_success = create_button_theme((16, 185, 129), (52, 211, 153), (5, 150, 105), text_color=(255, 255, 255))
+        btn_danger = create_button_theme((220, 38, 38), (239, 68, 68), (185, 28, 28), text_color=(255, 255, 255))
 
         # 状态概览横幅
         with dpg.group(horizontal=True):
-            dpg.add_text("⚡ PATH 状态体检：", color=COLOR_PRIMARY)
+            dpg.add_text("[PATH] 状态体检：", color=COLOR_PRIMARY)
             self.stats_text_id = dpg.add_text("加载中...")
             
         dpg.add_spacer(height=4)
 
-        # 快捷工具栏
+        # 快捷工具栏 - 行 1: 治理动作按钮
         with dpg.group(horizontal=True):
             b_clean = dpg.add_button(label="一键清理无效与空路径", callback=self._auto_clean_invalid)
             dpg.bind_item_theme(b_clean, btn_danger)
@@ -121,14 +137,20 @@ class PathViewUI:
             dpg.bind_item_theme(b_apply, btn_primary)
 
             dpg.add_button(label="刷新", callback=lambda s, d: self.refresh())
-            
-            dpg.add_text("   搜索过滤:")
-            dpg.add_input_text(hint="输入关键字筛选路径...", callback=self._on_search_change, width=200)
+
+        dpg.add_spacer(height=3)
+
+        # 快捷工具栏 - 行 2: 搜索过滤与排序提示
+        with dpg.group(horizontal=True):
+            dpg.add_text("搜索过滤:")
+            dpg.add_input_text(hint="输入关键字筛选路径...", callback=self._on_search_change, width=220)
+            dpg.add_spacer(width=15)
+            dpg.add_text("提示: 排序越靠前优先检索，点击单条可自动载入下方输入框", color=COLOR_MUTED)
 
         dpg.add_spacer(height=6)
 
         # PATH 列表容器
-        with dpg.child_window(height=380, border=True):
+        with dpg.child_window(height=400, border=True):
             self.table_id = dpg.add_table(
                 header_row=True,
                 resizable=True,
@@ -139,7 +161,7 @@ class PathViewUI:
                 borders_innerV=True,
                 borders_outerV=True
             )
-            dpg.add_table_column(label="序号", width_fixed=True, init_width_or_weight=50, parent=self.table_id)
+            dpg.add_table_column(label="序号", width_fixed=True, init_width_or_weight=60, parent=self.table_id)
             dpg.add_table_column(label="状态诊断", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
             dpg.add_table_column(label="启用", width_fixed=True, init_width_or_weight=50, parent=self.table_id)
             dpg.add_table_column(label="完整路径", width_stretch=True, init_width_or_weight=450, parent=self.table_id)
@@ -148,16 +170,25 @@ class PathViewUI:
         dpg.add_spacer(height=6)
 
         # 新增 PATH 条目卡片
-        with dpg.group(horizontal=True):
-            dpg.add_text("新增 PATH 条目:")
-            dpg.add_input_text(tag="path_add_input", hint="输入目录路径，或点击右侧浏览选择...", width=500)
-            dpg.add_button(label="浏览文件夹...", callback=self._browse_folder)
-            b_add_tail = dpg.add_button(label="添加至末尾", callback=self._add_path_tail)
-            dpg.bind_item_theme(b_add_tail, btn_primary)
-            b_add_head = dpg.add_button(label="添加至首部(最高优先)", callback=self._add_path_head)
-            dpg.bind_item_theme(b_add_head, btn_success)
+        with dpg.child_window(height=120, border=True):
+            with dpg.group(horizontal=True):
+                dpg.add_text("新增 / 编辑 PATH 条目:")
+                dpg.add_input_text(tag="path_add_input", hint="输入目录路径，或点击右侧浏览选择...", width=520)
+                dpg.add_button(label="浏览文件夹...", callback=self._browse_folder)
 
-        self.status_message_id = dpg.add_text("", color=COLOR_SUCCESS)
+            dpg.add_spacer(height=4)
+            with dpg.group(horizontal=True):
+                b_add_tail = dpg.add_button(label="添加至末尾", callback=self._add_path_tail)
+                dpg.bind_item_theme(b_add_tail, btn_primary)
+                
+                b_add_head = dpg.add_button(label="添加至首部 (最高优先级)", callback=self._add_path_head)
+                dpg.bind_item_theme(b_add_head, btn_success)
+                
+                dpg.add_button(label="清空输入", callback=lambda s, d: dpg.set_value("path_add_input", ""))
+
+            dpg.add_spacer(height=3)
+            self.status_message_id = dpg.add_text("", color=COLOR_SUCCESS)
+
         self.refresh()
 
     def _on_search_change(self, sender, data):
@@ -223,7 +254,6 @@ class PathViewUI:
             dpg.set_value(self.status_message_id, f"已删除 PATH 项: {removed['raw']}")
 
     def _on_toggle_enable(self, sender, app_data, user_data):
-        # 用户切换复选框，稍后点击应用即可生效
         pass
 
     def _save_and_apply(self, sender=None, data=None):

@@ -22,7 +22,7 @@ class ConfigUI:
         with dpg.group(horizontal=True):
             # 左侧：模型列表管理
             with dpg.child_window(width=340, height=560, border=True):
-                dpg.add_text("📋 已配置模型列表", color=COLOR_PRIMARY)
+                dpg.add_text("[模型] 已配置模型列表", color=COLOR_PRIMARY)
                 dpg.add_spacer(height=4)
                 
                 self.model_list_id = dpg.add_listbox(
@@ -42,8 +42,8 @@ class ConfigUI:
                 dpg.add_button(label="刷新列表", callback=self._refresh_list)
 
             # 右侧：添加 / 编辑模型 & 数据管理
-            with dpg.child_window(width=680, height=560, border=True):
-                dpg.add_text("⚙️ 添加 / 编辑大模型配置", color=COLOR_PRIMARY)
+            with dpg.child_window(width=-1, height=560, border=True):
+                dpg.add_text("[配置] 添加 / 编辑大模型配置", color=COLOR_PRIMARY)
                 dpg.add_spacer(height=4)
                 
                 # 快捷模板按钮
@@ -91,10 +91,10 @@ class ConfigUI:
                 dpg.add_spacer(height=6)
 
                 # 本地数据与备份管理
-                dpg.add_text("💾 存储与备份管理", color=COLOR_PRIMARY)
+                dpg.add_text("[存储] 存储与备份管理", color=COLOR_PRIMARY)
                 dpg.add_text(f"备份文件存放目录: {get_backup_dir()}", color=COLOR_MUTED)
                 dpg.add_spacer(height=4)
-                dpg.add_button(label="📂 在文件资源管理器中打开备份目录", callback=lambda s, d: open_in_explorer(str(get_backup_dir())))
+                dpg.add_button(label="[目录] 在文件资源管理器中打开备份目录", callback=lambda s, d: open_in_explorer(str(get_backup_dir())))
 
                 dpg.add_spacer(height=8)
                 self.status_message_id = dpg.add_text("", color=COLOR_SUCCESS)
@@ -103,7 +103,7 @@ class ConfigUI:
         name = m.get('name', 'unnamed')
         mtype = m.get('type', 'rule')
         is_default = (name == self.analyzer.client.default_model)
-        star = " ★ [默认]" if is_default else ""
+        star = " [默认]" if is_default else ""
         return f"{name} ({mtype}){star}"
 
     def _extract_name_from_display(self, disp_str: str) -> str:
@@ -189,9 +189,9 @@ class ConfigUI:
         dpg.set_value(self.status_message_id, f"正在测试 [{name}] 连通性...")
         ok, msg = self.analyzer.test_connection(name)
         if ok:
-            dpg.set_value(self.status_message_id, f"✅ 连接成功: {msg}")
+            dpg.set_value(self.status_message_id, f"[√] 连接成功: {msg}")
         else:
-            dpg.set_value(self.status_message_id, f"❌ 测试失败: {msg}")
+            dpg.set_value(self.status_message_id, f"[×] 测试失败: {msg}")
 
     def _refresh_list(self, sender=None, data=None):
         items = [self._format_model_item(m) for m in self.analyzer.models()]

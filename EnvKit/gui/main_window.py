@@ -15,17 +15,17 @@ from gui.skills_view import SkillsViewUI
 from gui.diagnosis_panel import DiagnosisUI
 from gui.config_panel import ConfigUI
 from gui.theme import (
-    setup_global_theme, COLOR_SUCCESS, COLOR_WARNING, COLOR_PRIMARY,
-    COLOR_MUTED, create_button_theme
+    setup_global_theme, toggle_global_theme, get_current_theme_mode,
+    COLOR_SUCCESS, COLOR_WARNING, COLOR_PRIMARY, COLOR_MUTED, create_button_theme
 )
 
 NAV_VIEWS = [
-    ('nav_env', 'view_env', '📌 环境变量'),
-    ('nav_path', 'view_path', '🛣️ PATH 治理'),
-    ('nav_reg', 'view_reg', '🗃️ 注册表'),
-    ('nav_skills', 'view_skills', '🛠️ 本地技能箱'),
-    ('nav_diag', 'view_diag', '🤖 AI 智能诊断'),
-    ('nav_cfg', 'view_cfg', '⚙️ 设置与模型'),
+    ('nav_env', 'view_env', '[环境] 环境变量'),
+    ('nav_path', 'view_path', '[PATH] PATH 治理'),
+    ('nav_reg', 'view_reg', '[注册表] 注册表管理'),
+    ('nav_skills', 'view_skills', '[技能箱] 本地技能箱'),
+    ('nav_diag', 'view_diag', '[AI] AI 智能诊断'),
+    ('nav_cfg', 'view_cfg', '[设置] 设置与模型'),
 ]
 
 def build_ui():
@@ -34,21 +34,42 @@ def build_ui():
     skill_manager = SkillManager()
     setup_global_theme()
 
-    active_theme = create_button_theme((37, 99, 235), (59, 130, 246), (29, 78, 216))
-    inactive_theme = create_button_theme((34, 38, 48), (45, 52, 68), (34, 38, 48))
+    # 预建深浅色导航按钮主题
+    nav_active_dark = create_button_theme((37, 99, 235), (59, 130, 246), (29, 78, 216), text_color=(255, 255, 255))
+    nav_inactive_dark = create_button_theme((34, 38, 48), (45, 52, 68), (34, 38, 48), text_color=(220, 226, 235))
+    
+    nav_active_light = create_button_theme((37, 99, 235), (59, 130, 246), (29, 78, 216), text_color=(255, 255, 255))
+    nav_inactive_light = create_button_theme((236, 240, 248), (220, 228, 240), (208, 218, 232), text_color=(35, 45, 60))
+    
     btn_admin = create_button_theme((217, 119, 6), (245, 158, 11), (180, 83, 9))
     current_active_nav = ['nav_env']
 
     diag_ui = None
     skills_ui = None
 
+    def _get_nav_themes():
+        is_dark = (get_current_theme_mode() == 'dark')
+        return (nav_active_dark if is_dark else nav_active_light,
+                nav_inactive_dark if is_dark else nav_inactive_light)
+
+    def _update_nav_themes():
+        act_theme, inact_theme = _get_nav_themes()
+        for nav_id, _, _ in NAV_VIEWS:
+            if dpg.does_item_exist(nav_id):
+                dpg.bind_item_theme(nav_id, act_theme if nav_id == current_active_nav[0] else inact_theme)
+
     def _switch_view(target_nav_id, target_view_id):
         current_active_nav[0] = target_nav_id
         for nav_id, view_id, _ in NAV_VIEWS:
             if dpg.does_item_exist(view_id):
                 dpg.configure_item(view_id, show=(view_id == target_view_id))
-            if dpg.does_item_exist(nav_id):
-                dpg.bind_item_theme(nav_id, active_theme if nav_id == target_nav_id else inactive_theme)
+        _update_nav_themes()
+
+    def _on_toggle_theme(sender, data):
+        new_mode = toggle_global_theme()
+        lbl = "[主题] 切换为浅色模式" if new_mode == 'dark' else "[主题] 切换为深色模式"
+        dpg.set_item_label('btn_theme_toggle', lbl)
+        _update_nav_themes()
 
     def _jump_to_diagnose(items):
         _switch_view('nav_diag', 'view_diag')
@@ -60,15 +81,17 @@ def build_ui():
             # ==========================================
             # 左侧导航侧边栏 (Sidebar Navigation)
             # ==========================================
-            with dpg.child_window(width=200, height=-1, border=True):
-                # 品牌 Logo 与标题
+            with dpg.child_window(width=220, height=-1, border=True):
+                # 品牌 Logo 与标题 (移除 emoji，无问号乱码)
                 with dpg.group(horizontal=True):
-                    dpg.add_text("⚡ EnvKit", color=COLOR_PRIMARY)
+                    dpg.add_text("EnvKit", color=COLOR_PRIMARY)
                     dpg.add_text("Pro", color=COLOR_SUCCESS)
                     
                 dpg.add_text("轻量环境与注册表管理", color=COLOR_MUTED)
                 dpg.add_separator()
                 dpg.add_spacer(height=6)
+
+                act_theme, inact_theme = _get_nav_themes()
 
                 # 导航按钮
                 for nav_id, view_id, label in NAV_VIEWS:
@@ -76,19 +99,31 @@ def build_ui():
                         tag=nav_id,
                         label=f" {label}",
                         width=-1,
-                        height=36,
+                        height=38,
                         callback=lambda s, d, u: _switch_view(u[0], u[1]),
                         user_data=(nav_id, view_id)
                     )
-                    dpg.bind_item_theme(btn, active_theme if nav_id == 'nav_env' else inactive_theme)
+                    dpg.bind_item_theme(btn, act_theme if nav_id == 'nav_env' else inact_theme)
                     dpg.add_spacer(height=3)
 
-                dpg.add_spacer(height=60)
+                dpg.add_spacer(height=25)
                 dpg.add_separator()
 
-                # 底部系统与资源占用状态卡片
+                # 主题切换与系统状态
                 with dpg.group():
                     dpg.add_spacer(height=4)
+                    
+                    cur_mode = get_current_theme_mode()
+                    theme_lbl = "[主题] 切换为浅色模式" if cur_mode == 'dark' else "[主题] 切换为深色模式"
+                    dpg.add_button(
+                        tag='btn_theme_toggle',
+                        label=theme_lbl,
+                        width=-1,
+                        height=32,
+                        callback=_on_toggle_theme
+                    )
+
+                    dpg.add_spacer(height=6)
                     ram_mb = get_process_memory_mb()
                     dpg.add_text(f"内存占用: ~{ram_mb} MB", color=(52, 211, 153, 255))
                     
@@ -104,9 +139,9 @@ def build_ui():
                         )
                         dpg.bind_item_theme(b_uac, btn_admin)
 
-                    dpg.add_spacer(height=6)
+                    dpg.add_spacer(height=4)
                     dpg.add_button(
-                        label="📂 打开备份目录",
+                        label="[备份] 打开备份目录",
                         width=-1,
                         callback=lambda s, d: open_in_explorer(str(get_backup_dir()))
                     )

@@ -22,7 +22,7 @@ class SkillsViewUI:
 
         # 弹窗：新建本地技能
         with dpg.window(modal=True, show=False, tag='modal_new_skill', no_move=True, no_resize=True, width=460, height=230):
-            dpg.add_text("✨ 创建本地自定义优化技能", color=COLOR_PRIMARY)
+            dpg.add_text("[新建] 创建本地自定义优化技能", color=COLOR_PRIMARY)
             dpg.add_separator()
             dpg.add_text("技能英文标识/文件名 (例如 my_cuda_cleaner):")
             dpg.add_input_text(tag='new_skill_id', default_value='my_env_cleaner', width=430)
@@ -36,15 +36,15 @@ class SkillsViewUI:
 
         # 顶部工具栏与概览
         with dpg.group(horizontal=True):
-            dpg.add_text("🛠️ 本地技能中心：", color=COLOR_PRIMARY)
+            dpg.add_text("[技能箱] 本地技能中心：", color=COLOR_PRIMARY)
             dpg.add_text("模块化本地排查与修复引擎，完全离线安全运行")
-            dpg.add_spacer(width=20)
+            dpg.add_spacer(width=15)
             
-            b_run_all = dpg.add_button(label="⚡ 运行全套技能体检", callback=self._run_all_skills)
+            b_run_all = dpg.add_button(label="[运行] 运行全套技能体检", callback=self._run_all_skills)
             dpg.bind_item_theme(b_run_all, btn_primary)
 
-            dpg.add_button(label="➕ 新建自定义技能", callback=lambda s, d: dpg.configure_item('modal_new_skill', show=True))
-            dpg.add_button(label="📂 打开 skills 插件目录", callback=lambda s, d: open_in_explorer(str(self.sm.skills_dir)))
+            dpg.add_button(label="[+] 新建自定义技能", callback=lambda s, d: dpg.configure_item('modal_new_skill', show=True))
+            dpg.add_button(label="[目录] 打开 skills 插件目录", callback=lambda s, d: open_in_explorer(str(self.sm.skills_dir)))
             dpg.add_button(label="重新扫描加载", callback=self._reload_skills)
 
         dpg.add_spacer(height=4)
@@ -65,13 +65,13 @@ class SkillsViewUI:
         # 技能卡片列表区（左/上）与执行控制台（右/下）
         with dpg.group(horizontal=True):
             # 左侧：技能卡片列表
-            with dpg.child_window(width=580, height=540, border=True):
+            with dpg.child_window(width=540, height=540, border=True):
                 self.cards_container_id = dpg.add_group()
                 self._render_skill_cards()
 
             # 右侧：实时输出控制台与报告详情
-            with dpg.child_window(width=480, height=540, border=True):
-                dpg.add_text("📋 技能执行日志与诊断报告", color=COLOR_PRIMARY)
+            with dpg.child_window(width=-1, height=540, border=True):
+                dpg.add_text("[日志] 技能执行日志与诊断报告", color=COLOR_PRIMARY)
                 self.status_text_id = dpg.add_text("就绪。选择任意技能点击“排查”或“一键修复”查看结果。", color=COLOR_MUTED)
                 dpg.add_separator()
                 self.console_text_id = dpg.add_input_text(
@@ -90,8 +90,8 @@ class SkillsViewUI:
         for c in children:
             dpg.delete_item(c)
 
-        btn_dry = create_button_theme((45, 55, 72), (74, 85, 104), (45, 55, 72))
-        btn_apply = create_button_theme((16, 185, 129), (52, 211, 153), (5, 150, 105))
+        btn_dry = create_button_theme((45, 55, 72), (74, 85, 104), (45, 55, 72), text_color=(255, 255, 255))
+        btn_apply = create_button_theme((16, 185, 129), (52, 211, 153), (5, 150, 105), text_color=(255, 255, 255))
 
         skills = self.sm.list_skills()
         for skill in skills:
@@ -104,19 +104,19 @@ class SkillsViewUI:
                     dpg.add_spacer(width=10)
                     dpg.add_text(f"[{skill.category}]", color=COLOR_MUTED)
 
-                dpg.add_text(skill.description, wrap=540, color=(200, 205, 215, 255))
+                dpg.add_text(skill.description, wrap=500)
                 dpg.add_spacer(height=2)
 
                 with dpg.group(horizontal=True):
                     dpg.add_button(
-                        label="🔍 仅体检排查 (Dry Run)",
+                        label="[排查] 仅体检排查 (Dry Run)",
                         parent=dpg.last_container(),
                         callback=self._run_single_skill,
                         user_data=(skill.id, True)
                     )
                     
                     b_fix = dpg.add_button(
-                        label="⚡ 一键执行修复",
+                        label="[修复] 一键执行修复",
                         parent=dpg.last_container(),
                         callback=self._run_single_skill,
                         user_data=(skill.id, False)

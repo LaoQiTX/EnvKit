@@ -31,7 +31,7 @@ class RegUI:
 
         # 删除确认弹窗
         with dpg.window(modal=True, show=False, tag='modal_delete_reg_confirm', no_move=True, no_resize=True, width=420, height=190):
-            dpg.add_text("⚠️ 确认删除注册表键值？", color=COLOR_WARNING)
+            dpg.add_text("[提示] 确认删除注册表键值？", color=COLOR_WARNING)
             dpg.add_separator()
             dpg.add_text(tag='modal_delete_reg_text', wrap=390)
             dpg.add_spacer(height=10)
@@ -82,7 +82,7 @@ class RegUI:
         dpg.add_spacer(height=6)
 
         # 注册表键值列表
-        with dpg.child_window(height=350, border=True):
+        with dpg.child_window(height=380, border=True):
             self.table_id = dpg.add_table(
                 header_row=True,
                 resizable=True,
@@ -93,7 +93,7 @@ class RegUI:
                 borders_innerV=True,
                 borders_outerV=True
             )
-            dpg.add_table_column(label="名称 (双击编辑)", width_stretch=True, init_width_or_weight=220, parent=self.table_id)
+            dpg.add_table_column(label="名称 (单击选中载入编辑)", width_stretch=True, init_width_or_weight=220, parent=self.table_id)
             dpg.add_table_column(label="类型", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
             dpg.add_table_column(label="数值状态", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
             dpg.add_table_column(label="数值数据 (Value Data)", width_stretch=True, init_width_or_weight=450, parent=self.table_id)
@@ -102,14 +102,14 @@ class RegUI:
 
         # 底部编辑卡片
         with dpg.child_window(height=180, border=True):
-            dpg.add_text("📝 注册表键值编辑（新建/修改/删除）：", color=COLOR_PRIMARY)
+            dpg.add_text("[编辑] 注册表键值编辑（新建/修改/删除）：", color=COLOR_PRIMARY)
             with dpg.group(horizontal=True):
                 dpg.add_text("名称:")
-                dpg.add_input_text(tag="reg_val_name", width=200)
+                dpg.add_input_text(tag="reg_val_name", width=220)
                 dpg.add_text("类型:")
                 dpg.add_combo(tag="reg_val_type", items=list(STR_TO_TYPE.keys()), default_value='REG_SZ', width=150)
                 dpg.add_text("数值数据:")
-                dpg.add_input_text(tag="reg_val_data", width=400)
+                dpg.add_input_text(tag="reg_val_data", width=420)
 
             dpg.add_spacer(height=6)
             with dpg.group(horizontal=True):
@@ -189,15 +189,14 @@ class RegUI:
 
             row_id = dpg.add_table_row(parent=self.table_id)
             
-            # 名称
-            sel_id = dpg.add_selectable(label=name, parent=row_id)
-            handler = dpg.add_item_handler_registry()
-            dpg.add_item_clicked_handler(
-                parent=handler,
+            # 名称（整行高亮，单击任意处可载入编辑）
+            dpg.add_selectable(
+                label=name,
+                parent=row_id,
+                span_columns=True,
                 callback=self._on_row_click,
                 user_data=item
             )
-            dpg.bind_item_handler_registry(sel_id, handler)
 
             # 类型
             dpg.add_text(item.get('type_str', 'REG_SZ'), parent=row_id, color=COLOR_MUTED)
@@ -229,6 +228,8 @@ class RegUI:
         dpg.set_value("reg_val_data", str(val))
         if vtype_str in STR_TO_TYPE:
             dpg.set_value("reg_val_type", vtype_str)
+        if self.status_message_id and dpg.does_item_exist(self.status_message_id):
+            dpg.set_value(self.status_message_id, f"已选中注册表键值 [{name}]，可在下方直接修改或删除。")
 
     def _set_value(self, sender, data):
         subkey = dpg.get_value('reg_subkey_input').strip()

@@ -31,6 +31,7 @@ class EnvUI:
         self.pending_delete_name = None
         self.search_filter = ""
         self.vars_cache = {}
+        self.selected_key = None
 
     def get_current_scope(self) -> str:
         return self.scope
@@ -57,15 +58,16 @@ class EnvUI:
 
             row_id = dpg.add_table_row(parent=self.table_id)
             
-            # 变量名（可点击）
-            sel_id = dpg.add_selectable(label=k, parent=row_id)
-            handler = dpg.add_item_handler_registry()
-            dpg.add_item_clicked_handler(
-                parent=handler,
+            # 变量名（整行高亮，单击任意处可快速载入编辑区）
+            is_selected = (k == self.selected_key)
+            dpg.add_selectable(
+                label=k,
+                parent=row_id,
+                span_columns=True,
+                default_value=is_selected,
                 callback=self._on_row_click,
                 user_data={'key': k, 'value': v}
             )
-            dpg.bind_item_handler_registry(sel_id, handler)
 
             # 属性标记
             badge = "常规"
@@ -92,17 +94,20 @@ class EnvUI:
     def _on_row_click(self, sender, app_data, user_data):
         k = user_data['key']
         v = user_data['value']
+        self.selected_key = k
         dpg.set_value('env_input_key', k)
         dpg.set_value('env_input_val', v)
+        if self.status_message_id and dpg.does_item_exist(self.status_message_id):
+            dpg.set_value(self.status_message_id, f"已选中变量 [{k}]，可在下方直接修改或删除。")
 
     def build(self):
-        btn_primary = create_button_theme((37, 99, 235), (59, 130, 246), (29, 78, 216))
-        btn_danger = create_button_theme((220, 38, 38), (239, 68, 68), (185, 28, 28))
-        btn_success = create_button_theme((16, 185, 129), (52, 211, 153), (5, 150, 105))
+        btn_primary = create_button_theme((37, 99, 235), (59, 130, 246), (29, 78, 216), text_color=(255, 255, 255))
+        btn_danger = create_button_theme((220, 38, 38), (239, 68, 68), (185, 28, 28), text_color=(255, 255, 255))
+        btn_success = create_button_theme((16, 185, 129), (52, 211, 153), (5, 150, 105), text_color=(255, 255, 255))
 
         # 删除确认弹窗
         with dpg.window(modal=True, show=False, tag='modal_delete_env_confirm', no_move=True, no_resize=True, width=420, height=200):
-            dpg.add_text("⚠️ 确认删除环境变量？", color=COLOR_WARNING)
+            dpg.add_text("[提示] 确认删除环境变量？", color=COLOR_WARNING)
             dpg.add_separator()
             dpg.add_text(tag='modal_delete_env_text', wrap=390)
             dpg.add_spacer(height=10)
@@ -111,7 +116,10 @@ class EnvUI:
                 dpg.bind_item_theme(b_del_yes, btn_danger)
                 dpg.add_button(label="取消", callback=lambda s, d: dpg.configure_item('modal_delete_env_confirm', show=False))
 
-        # 顶部工具栏
+        # ==========================================
+        # 顶部工具栏 - 双行响应式布局（彻底解决窗口较小时遮挡遮盖问题）
+        # ==========================================
+        # 行 1: 作用域切换、变量统计、过滤搜索与刷新
         with dpg.group(horizontal=True):
             dpg.add_text("作用域:")
             dpg.add_radio_button(
@@ -121,22 +129,29 @@ class EnvUI:
                 tag='env_scope_radio',
                 callback=self._on_scope_change
             )
-            dpg.add_spacer(width=15)
-            self.count_text_id = dpg.add_text("共 0 个变量", color=COLOR_MUTED)
-            dpg.add_spacer(width=15)
+            dpg.add_spacer(width=20)
             dpg.add_text("搜索:")
-            dpg.add_input_text(hint="筛选变量名或变量值...", callback=self._on_search_change, width=180)
+            dpg.add_input_text(hint="筛选变量名或变量值...", callback=self._on_search_change, width=200)
             dpg.add_button(label="刷新列表", callback=lambda s, d: self.refresh_vars())
-            
+            dpg.add_spacer(width=10)
+            self.count_text_id = dpg.add_text("共 0 个变量", color=COLOR_MUTED)
+
+        dpg.add_spacer(height=4)
+
+        # 行 2: 核心备份操作、恢复、清空与交互提示
+        with dpg.group(horizontal=True):
             b_bak = dpg.add_button(label="一键备份全部变量", callback=self._backup_all)
             dpg.bind_item_theme(b_bak, btn_success)
             
             dpg.add_button(label="从备份文件恢复...", callback=self._restore_from_backup)
+            dpg.add_button(label="清空输入框", callback=self._clear_inputs)
+            dpg.add_spacer(width=15)
+            dpg.add_text("提示: 单击表格中任意变量行即可自动载入下方编辑区", color=COLOR_MUTED)
 
         dpg.add_spacer(height=6)
 
         # 变量列表容器
-        with dpg.child_window(height=390, border=True):
+        with dpg.child_window(height=400, border=True):
             self.table_id = dpg.add_table(
                 header_row=True,
                 resizable=True,
@@ -147,22 +162,22 @@ class EnvUI:
                 borders_innerV=True,
                 borders_outerV=True
             )
-            dpg.add_table_column(label="变量名 (双击快速编辑)", width_stretch=True, init_width_or_weight=220, parent=self.table_id)
+            dpg.add_table_column(label="变量名 (单击选中载入编辑)", width_stretch=True, init_width_or_weight=220, parent=self.table_id)
             dpg.add_table_column(label="属性状态", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
             dpg.add_table_column(label="变量值", width_stretch=True, init_width_or_weight=550, parent=self.table_id)
 
         dpg.add_spacer(height=6)
 
         # 底部编辑与操作卡片
-        with dpg.child_window(height=170, border=True):
-            dpg.add_text("📝 变量详情与操作（支持新建、修改或删除）：", color=COLOR_PRIMARY)
+        with dpg.child_window(height=180, border=True):
+            dpg.add_text("[编辑] 变量详情与操作（支持新建、修改或删除）：", color=COLOR_PRIMARY)
             with dpg.group(horizontal=True):
                 dpg.add_text("变量名:")
-                dpg.add_input_text(tag="env_input_key", width=250)
+                dpg.add_input_text(tag="env_input_key", width=260)
                 dpg.add_text("变量值:")
-                dpg.add_input_text(tag="env_input_val", width=550)
+                dpg.add_input_text(tag="env_input_val", width=560)
 
-            dpg.add_spacer(height=4)
+            dpg.add_spacer(height=5)
             with dpg.group(horizontal=True):
                 b_save = dpg.add_button(label="保存 / 更新变量", callback=self._save_var)
                 dpg.bind_item_theme(b_save, btn_primary)
@@ -175,6 +190,7 @@ class EnvUI:
                 if self.on_send_to_diagnose:
                     dpg.add_button(label="发送到 AI 进行深入分析", callback=self._send_selected_to_diagnose)
 
+            dpg.add_spacer(height=4)
             self.status_message_id = dpg.add_text("", color=COLOR_SUCCESS)
 
         self.refresh_vars()
@@ -182,6 +198,7 @@ class EnvUI:
     def _on_scope_change(self, sender, data):
         self.scope = 'user' if 'User' in data else 'system'
         self.manager = EnvManager(self.scope)
+        self.selected_key = None
         self.refresh_vars()
 
     def _on_search_change(self, sender, data):
@@ -189,8 +206,11 @@ class EnvUI:
         self._render_rows()
 
     def _clear_inputs(self, sender=None, data=None):
+        self.selected_key = None
         dpg.set_value("env_input_key", "")
         dpg.set_value("env_input_val", "")
+        if self.status_message_id and dpg.does_item_exist(self.status_message_id):
+            dpg.set_value(self.status_message_id, "输入框已清空")
 
     def _save_var(self, sender, data):
         k = dpg.get_value("env_input_key").strip()
@@ -202,8 +222,9 @@ class EnvUI:
         try:
             self.manager.set(k, v)
             dpg.set_value(self.status_message_id, f"成功更新环境变量 [{k}]，已通知系统全局生效！")
+            self.selected_key = k
             self.refresh_vars()
-        except PermissionError as e:
+        except PermissionError:
             dpg.set_value(self.status_message_id, f"权限不足：修改系统变量需以管理员身份运行！")
         except Exception as e:
             dpg.set_value(self.status_message_id, f"保存失败: {e}")
@@ -227,7 +248,7 @@ class EnvUI:
 
         text = f"您确定要永久删除 [{self.scope}] 作用域下的环境变量 [{k}] 吗？"
         if warning_reasons:
-            text += f"\n\n⚠️ 风险提示：该变量 { '，'.join(warning_reasons) }，删除可能导致相关软件无法启动！"
+            text += f"\n\n[!] 风险提示：该变量 { '，'.join(warning_reasons) }，删除可能导致相关软件无法启动！"
             
         dpg.set_value('modal_delete_env_text', text)
         dpg.configure_item('modal_delete_env_confirm', show=True)

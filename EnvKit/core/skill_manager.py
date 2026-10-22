@@ -38,7 +38,7 @@ class BaseSkill:
     id: str = "base_skill"
     name: str = "基础技能"
     category: str = "通用"
-    icon: str = "🛠️"
+    icon: str = "[技能]"
     description: str = "技能基类"
     author: str = "EnvKit Core"
     version: str = "1.0"
@@ -53,7 +53,7 @@ class GhostPathCleanerSkill(BaseSkill):
     id = "ghost_path_cleaner"
     name = "幽灵无效路径清理技能"
     category = "PATH 治理"
-    icon = "👻"
+    icon = "[清理]"
     description = "深度扫描用户与系统 PATH 中已被删除或卸载软件残留的失效目录，支持安全备份并一键清理"
 
     def execute(self, context: SkillContext) -> SkillResult:
@@ -136,7 +136,7 @@ class ScopeConflictSkill(BaseSkill):
     id = "scope_conflict_resolver"
     name = "跨作用域 PATH 重复冲突分析技能"
     category = "冲突解决"
-    icon = "⚡"
+    icon = "[冲突]"
     description = "对比用户 PATH 与系统 PATH 的重叠项，解决因优先级覆盖导致的工具版本错乱问题"
 
     def execute(self, context: SkillContext) -> SkillResult:
@@ -197,7 +197,7 @@ class DevStackAuditSkill(BaseSkill):
     id = "dev_stack_audit"
     name = "开发工具链环境全景诊断技能"
     category = "开发环境"
-    icon = "💻"
+    icon = "[开发]"
     description = "全面检测 Python、Java、Node.js、Go、Rust、Git 等开发工具链环境变量配置与版本绑定"
 
     def execute(self, context: SkillContext) -> SkillResult:
@@ -216,49 +216,49 @@ class DevStackAuditSkill(BaseSkill):
         if java_home:
             if not os.path.exists(java_home):
                 issues += 1
-                details.append(f"❌ [Java] JAVA_HOME 指向的目录不存在: {java_home}")
+                details.append(f"[×] [Java] JAVA_HOME 指向的目录不存在: {java_home}")
             else:
                 bin_dir = os.path.join(java_home, 'bin')
                 if os.path.exists(bin_dir) and bin_dir.lower() not in full_path.lower():
                     issues += 1
-                    details.append(f"⚠️ [Java] JAVA_HOME 存在，但 %JAVA_HOME%\\bin 未加入 PATH 环境变量")
+                    details.append(f"[!] [Java] JAVA_HOME 存在，但 %JAVA_HOME%\\bin 未加入 PATH 环境变量")
                 else:
-                    details.append(f"✅ [Java] JAVA_HOME 配置正常: {java_home}")
+                    details.append(f"[√] [Java] JAVA_HOME 配置正常: {java_home}")
         else:
-            details.append("ℹ️ [Java] 未配置 JAVA_HOME 环境变量")
+            details.append("[i] [Java] 未配置 JAVA_HOME 环境变量")
 
         # 2. Python 检查
         py_scripts = [p for p in full_path.split(';') if 'python' in p.lower() and 'scripts' in p.lower()]
         py_homes = [p for p in full_path.split(';') if 'python' in p.lower() and os.path.exists(os.path.join(p, 'python.exe'))]
         if py_homes:
-            details.append(f"✅ [Python] 检测到当前 PATH 中包含 {len(py_homes)} 个 Python 环境: {py_homes[0]}")
+            details.append(f"[√] [Python] 检测到当前 PATH 中包含 {len(py_homes)} 个 Python 环境: {py_homes[0]}")
             if len(py_homes) > 1:
-                details.append(f"⚠️ [Python] 存在多个不同 Python 版本在 PATH 中，靠前的将优先执行: {py_homes}")
+                details.append(f"[!] [Python] 存在多个不同 Python 版本在 PATH 中，靠前的将优先执行: {py_homes}")
             if not py_scripts:
                 issues += 1
-                details.append("⚠️ [Python] PATH 中未检测到 Python\\Scripts 目录，可能导致 pip 安装的命令行工具无法直接运行")
+                details.append("[!] [Python] PATH 中未检测到 Python\\Scripts 目录，可能导致 pip 安装的命令行工具无法直接运行")
         else:
-            details.append("ℹ️ [Python] PATH 中未直接检测到 python.exe 目录")
+            details.append("[i] [Python] PATH 中未直接检测到 python.exe 目录")
 
         # 3. Node.js 检查
         node_paths = [p for p in full_path.split(';') if os.path.exists(os.path.join(p, 'node.exe'))]
         if node_paths:
-            details.append(f"✅ [Node.js] 检测到 Node.js 运行时路径: {node_paths[0]}")
+            details.append(f"[√] [Node.js] 检测到 Node.js 运行时路径: {node_paths[0]}")
         else:
-            details.append("ℹ️ [Node.js] 未检测到 node.exe 路径")
+            details.append("[i] [Node.js] 未检测到 node.exe 路径")
 
         # 4. Git 检查
         git_paths = [p for p in full_path.split(';') if 'git' in p.lower() and ('cmd' in p.lower() or 'bin' in p.lower())]
         if git_paths:
-            details.append(f"✅ [Git] Git 命令路径已正确配置: {git_paths[0]}")
+            details.append(f"[√] [Git] Git 命令路径已正确配置: {git_paths[0]}")
         else:
-            details.append("ℹ️ [Git] 未在 PATH 中找到 Git 路径")
+            details.append("[i] [Git] 未在 PATH 中找到 Git 路径")
 
         # 5. Rust & Go
         if 'CARGO_HOME' in all_vars:
-            details.append(f"✅ [Rust] CARGO_HOME: {all_vars['CARGO_HOME']}")
+            details.append(f"[√] [Rust] CARGO_HOME: {all_vars['CARGO_HOME']}")
         if 'GOPATH' in all_vars:
-            details.append(f"✅ [Go] GOPATH: {all_vars['GOPATH']}")
+            details.append(f"[√] [Go] GOPATH: {all_vars['GOPATH']}")
 
         summary = f"开发工具链体检完成：共评估 6 种主流语言与运行时，发现 {issues} 处待优化配置。"
         return SkillResult(
@@ -278,7 +278,7 @@ class RegistryRunDoctorSkill(BaseSkill):
     id = "reg_run_doctor"
     name = "注册表开机启动健康体检技能"
     category = "注册表修复"
-    icon = "🩺"
+    icon = "[自启]"
     description = "排查 HKCU / HKLM 注册表自启动项中的失效残留（已卸载但仍在开机启动中执行的死链接）"
 
     def execute(self, context: SkillContext) -> SkillResult:
@@ -301,9 +301,9 @@ class RegistryRunDoctorSkill(BaseSkill):
                     norm_exe = normalize_path(exe_path)
                     if not os.path.exists(norm_exe):
                         dead_entries.append((root_name, reg_mgr, sub, name, cmd, norm_exe))
-                        details.append(f"❌ [{root_name} 自启动] 键名: {name} | 目标文件不存在: {norm_exe}")
+                        details.append(f"[×] [{root_name} 自启动] 键名: {name} | 目标文件不存在: {norm_exe}")
                 elif cmd and not os.path.exists(normalize_path(cmd.split(' ')[0])):
-                    details.append(f"⚠️ [{root_name} 自启动] 无法确认程序有效性: {name} -> {cmd[:60]}")
+                    details.append(f"[!] [{root_name} 自启动] 无法确认程序有效性: {name} -> {cmd[:60]}")
 
         issues = len(dead_entries)
         if issues == 0:
@@ -349,7 +349,7 @@ class DanglingVarSkill(BaseSkill):
     id = "dangling_var_resolver"
     name = "未定义环境变量引用修复技能"
     category = "变量修复"
-    icon = "🔗"
+    icon = "[引用]"
     description = "扫描环境变量值中形如 %VAR% 的嵌套引用，排查目标变量不存在导致的路径失效问题"
 
     def execute(self, context: SkillContext) -> SkillResult:
@@ -373,7 +373,7 @@ class DanglingVarSkill(BaseSkill):
                 for ref in refs:
                     if ref.upper() not in known_names:
                         issues += 1
-                        details.append(f"❌ [{scope}变量 {k}] 引用了未定义的变量: %{ref}% (完整取值: {val[:80]})")
+                        details.append(f"[×] [{scope}变量 {k}] 引用了未定义的变量: %{ref}% (完整取值: {val[:80]})")
 
         if issues == 0:
             summary = "全系统未发现任何悬挂或未定义的环境变量嵌套引用。"
@@ -475,7 +475,7 @@ class CustomSkill_{safe_name}(BaseSkill):
     id = "{safe_name}"
     name = "{skill_name}"
     category = "自定义扩展"
-    icon = "⚡"
+    icon = "[自定义]"
     description = "{desc}"
     author = "User"
     version = "1.0"

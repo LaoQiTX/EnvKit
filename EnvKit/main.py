@@ -33,8 +33,10 @@ def _setup_font():
                 break
                 
         if chosen_path:
-            with dpg.font(chosen_path, 17) as font:
+            with dpg.font(chosen_path, 20) as font:
                 dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Full)
+                dpg.add_font_range(0x0020, 0x007E)
+                dpg.add_font_range(0x25A0, 0x25FF)
             dpg.bind_font(font)
 
 def main():
@@ -45,10 +47,10 @@ def main():
         
         dpg.create_viewport(
             title='EnvKit Pro',
-            width=1100,
-            height=780,
-            min_width=960,
-            min_height=650
+            width=1180,
+            height=820,
+            min_width=1000,
+            min_height=680
         )
         dpg.setup_dearpygui()
         dpg.set_primary_window('EnvKit', True)

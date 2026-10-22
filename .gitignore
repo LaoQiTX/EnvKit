@@ -6,4 +6,7 @@ __pycache__/
 build/
 dist_py/
 dist/EnvKitFolder/
+dist/
 *.log
+theme_pref.txt
+EnvKit/theme_pref.txt
