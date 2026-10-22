@@ -1,9 +1,0 @@
-{
-  "models": [
-    {
-      "name": "local-rules",
-      "type": "rule"
-    }
-  ],
-  "default": "deepseek"
-}

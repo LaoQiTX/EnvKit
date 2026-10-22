@@ -1,12 +1,46 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
 *.pyd
-.pytest_cache/
-build/
-dist_py/
-dist/EnvKitFolder/
+
+# C extensions & dynamic libs
+*.so
+*.dylib
+*.dll
+
+# Distribution / packaging / build artifacts
 dist/
+dist_py/
+dist_nuitka/
+build/
+*.egg-info/
+.eggs/
+
+# Spec files
+EnvKitFolder.spec
+
+# Logs & temp
 *.log
+*.tmp
+
+# User preferences & local backups
 theme_pref.txt
-EnvKit/theme_pref.txt
+**/theme_pref.txt
+.backup/
+**/.backup/
+*.bak
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Design drafts & assets (本地保留，不纳入源码仓库跟踪)
+设计/
+
+# IDE / Editor config
+.vscode/
+.idea/
+*.swp
+*.swo
