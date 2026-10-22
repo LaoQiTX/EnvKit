@@ -249,13 +249,23 @@ def create_button_theme(bg_color, hover_color, active_color, text_color=None):
                 dpg.add_theme_color(dpg.mvThemeCol_Text, text_color)
     return theme
 
-def create_splitter_theme():
-    """分割条主题：平时呈现极细隐形分界线，悬停时点亮为蓝色，拖拽时变为高亮蓝色"""
+def create_splitter_theme(mode: str = None):
+    """精致的可拖拽分割线主题：平时呈现细微中性发丝线，悬停时点亮为蓝色光晕，拖拽时呈深度强调色"""
+    m = mode or get_current_theme_mode()
     with dpg.theme() as theme:
         with dpg.theme_component(dpg.mvButton):
-            dpg.add_theme_color(dpg.mvThemeCol_Button, (45, 58, 80, 80))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (86, 135, 240, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (46, 95, 204, 255))
+            if m == 'light':
+                dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 0, 0, 0))
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (46, 95, 204, 150))
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (36, 77, 176, 240))
+                dpg.add_theme_color(dpg.mvThemeCol_Border, (215, 222, 232, 200))
+            else:
+                dpg.add_theme_color(dpg.mvThemeCol_Button, (0, 0, 0, 0))
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (86, 135, 240, 160))
+                dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (46, 95, 204, 240))
+                dpg.add_theme_color(dpg.mvThemeCol_Border, (51, 66, 93, 180))
+                
+            dpg.add_theme_style(dpg.mvStyleVar_FrameBorderSize, 1)
             dpg.add_theme_style(dpg.mvStyleVar_FrameRounding, 3)
             dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, 0)
     return theme

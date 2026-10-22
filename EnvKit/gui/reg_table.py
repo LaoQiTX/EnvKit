@@ -1,7 +1,13 @@
 import os
+import ctypes
 import dearpygui.dearpygui as dpg
 from typing import List, Dict, Any, Optional
 from core.reg_manager import RegManager, PRESET_KEYS, TYPE_MAP, STR_TO_TYPE
+
+try:
+    _RESIZE_CURSOR = ctypes.windll.user32.LoadCursorW(None, 32644) # IDC_SIZEWE
+except Exception:
+    _RESIZE_CURSOR = None
 from core.analyzer import Analyzer
 from core.backup import backup, restore
 from utils.path_helper import get_backup_dir
@@ -31,6 +37,7 @@ class RegUI:
         self.is_new_mode = False
         self.detail_container_id = None
         self.detail_width = 410
+        self.is_dragging = False
         self.left_pane_tag = 'reg_left_pane'
         self.right_pane_tag = 'reg_right_pane'
         self.splitter_tag = 'reg_splitter_bar'
@@ -441,12 +448,12 @@ class RegUI:
                     self.status_banner_id = dpg.add_text("当前没有待应用的更改 | 应用前将自动备份", color=COLOR_MUTED)
 
             # ---------------------------------------------------------
-            # 2. 中间可拖拽分割条 (Draggable Splitter Bar)
+            # 2. 中间精致发丝拖拽分割线 (6px 优雅感应带，悬停蓝光 + ↔ 调节光标)
             # ---------------------------------------------------------
             b_split = dpg.add_button(
                 tag=self.splitter_tag,
                 label="",
-                width=8,
+                width=6,
                 height=-1
             )
             dpg.bind_item_theme(b_split, splitter_theme)
@@ -457,24 +464,42 @@ class RegUI:
             with dpg.child_window(tag=self.right_pane_tag, width=self.detail_width, height=-1, border=True, no_scrollbar=True):
                 self.detail_container_id = dpg.add_group()
 
-        # 注册拖拽事件监听器
+        # 注册鼠标与拖拽事件监听器 (鼠标绝对位置 1:1 跟随驱动，绝不乱跳)
         if not dpg.does_item_exist('reg_splitter_handler_reg'):
             with dpg.handler_registry(tag='reg_splitter_handler_reg'):
-                dpg.add_mouse_drag_handler(button=0, threshold=0.0, callback=self._on_splitter_drag)
+                dpg.add_mouse_move_handler(callback=self._on_mouse_move)
+                dpg.add_mouse_drag_handler(button=0, threshold=0.0, callback=self._on_mouse_drag)
+                dpg.add_mouse_release_handler(button=0, callback=self._on_mouse_release)
 
         self._list_values()
 
-    def _on_splitter_drag(self, sender, app_data, user_data):
+    def _on_mouse_move(self, sender=None, app_data=None, user_data=None):
+        if dpg.does_item_exist(self.splitter_tag):
+            if dpg.is_item_hovered(self.splitter_tag) or self.is_dragging:
+                if _RESIZE_CURSOR:
+                    ctypes.windll.user32.SetCursor(_RESIZE_CURSOR)
+
+        if self.is_dragging:
+            if not dpg.is_mouse_button_down(0):
+                self.is_dragging = False
+                return
+            mx = dpg.get_mouse_pos()[0]
+            vw = dpg.get_viewport_width()
+            right_edge = vw - 20
+            # 绝对跟随光标驱动：光标到哪，分割线中心就在哪，杜绝漂移和跳变
+            new_w = max(260, min(820, int(right_edge - mx - 3)))
+            if new_w != self.detail_width:
+                self.detail_width = new_w
+                dpg.set_item_width(self.left_pane_tag, -self.detail_width - 10)
+                dpg.set_item_width(self.right_pane_tag, self.detail_width)
+
+    def _on_mouse_drag(self, sender, app_data, user_data):
         if dpg.does_item_exist(self.splitter_tag) and dpg.is_item_active(self.splitter_tag):
-            delta = dpg.get_mouse_drag_delta()
-            dx = delta[0]
-            if dx != 0:
-                new_w = max(260, min(800, self.detail_width - int(dx)))
-                if new_w != self.detail_width:
-                    self.detail_width = new_w
-                    dpg.set_item_width(self.left_pane_tag, -self.detail_width - 12)
-                    dpg.set_item_width(self.right_pane_tag, self.detail_width)
-                dpg.reset_mouse_drag_delta()
+            self.is_dragging = True
+            self._on_mouse_move()
+
+    def _on_mouse_release(self, sender, app_data, user_data):
+        self.is_dragging = False
 
     def _switch_root(self, root_str: str):
         self.root = root_str

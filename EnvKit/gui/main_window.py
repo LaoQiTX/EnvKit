@@ -18,7 +18,8 @@ from gui.diagnosis_panel import DiagnosisUI
 from gui.config_panel import ConfigUI
 from gui.theme import (
     setup_global_theme, toggle_global_theme, get_current_theme_mode,
-    COLOR_SUCCESS, COLOR_WARNING, COLOR_PRIMARY, COLOR_MUTED, create_button_theme
+    COLOR_SUCCESS, COLOR_WARNING, COLOR_PRIMARY, COLOR_MUTED, create_button_theme,
+    create_splitter_theme
 )
 
 # 侧边栏导航定义（严格对齐设计稿结构与功能体系）
@@ -94,6 +95,11 @@ def build_ui():
         lbl = "切换为浅色模式" if new_mode == 'dark' else "切换为深色模式"
         dpg.set_item_label('btn_theme_toggle', lbl)
         _update_nav_themes()
+        # 实时同步分割条在深浅主题下的发丝线与悬停光泽
+        if env_ui and dpg.does_item_exist(env_ui.splitter_tag):
+            dpg.bind_item_theme(env_ui.splitter_tag, create_splitter_theme(new_mode))
+        if reg_ui and dpg.does_item_exist(reg_ui.splitter_tag):
+            dpg.bind_item_theme(reg_ui.splitter_tag, create_splitter_theme(new_mode))
 
     # 顶层主窗口（禁用窗口级滚动条，由内部工作区自适应管理）
     with dpg.window(tag='EnvKit', no_move=True, no_resize=True, no_close=True, no_scrollbar=True):
