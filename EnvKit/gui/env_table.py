@@ -238,8 +238,8 @@ class EnvUI:
 
             dpg.add_spacer(height=4, parent=self.detail_container_id)
 
-            # 条目滚屏列表容器
-            with dpg.child_window(height=360, border=True, parent=self.detail_container_id):
+            # 条目滚屏列表容器 (仅内部条目滚动，外侧面板无滚动条)
+            with dpg.child_window(height=340, border=True, no_scrollbar=False, parent=self.detail_container_id):
                 for idx, entry in enumerate(self.path_entries):
                     p_raw = entry['raw']
                     with dpg.group(horizontal=True):
@@ -298,7 +298,7 @@ class EnvUI:
             dpg.add_spacer(height=6, parent=self.detail_container_id)
 
             dpg.add_text("变量值:", parent=self.detail_container_id)
-            dpg.add_input_text(tag="detail_edit_val", default_value=v, multiline=True, height=180, width=-1, parent=self.detail_container_id)
+            dpg.add_input_text(tag="detail_edit_val", default_value=v, multiline=True, height=140, width=-1, parent=self.detail_container_id)
             dpg.add_spacer(height=6, parent=self.detail_container_id)
 
             # 属性与有效性检测
@@ -526,9 +526,9 @@ class EnvUI:
         # =============================================================
         with dpg.group(horizontal=True):
             # ---------------------------------------------------------
-            # 1. 中部主工作区 (Middle Content Workspace)
+            # 1. 中部主工作区 (Middle Content Workspace) - 禁用外层滚动条
             # ---------------------------------------------------------
-            with dpg.child_window(width=-390, height=-1, border=True):
+            with dpg.child_window(width=-390, height=-1, border=True, no_scrollbar=True):
                 # 面包屑与大标题 (设计稿一致)
                 dpg.add_text("工作区 > 环境变量", color=COLOR_MUTED)
                 dpg.add_spacer(height=2)
@@ -560,21 +560,24 @@ class EnvUI:
                 dpg.add_separator()
                 dpg.add_spacer(height=4)
 
-                # 变量列表表格
-                with dpg.child_window(height=-45, border=True):
-                    self.table_id = dpg.add_table(
-                        header_row=True,
-                        resizable=True,
-                        policy=dpg.mvTable_SizingStretchProp,
-                        row_background=True,
-                        borders_innerH=True,
-                        borders_outerH=True,
-                        borders_innerV=True,
-                        borders_outerV=True
-                    )
-                    dpg.add_table_column(label="变量名称", width_stretch=True, init_width_or_weight=200, parent=self.table_id)
-                    dpg.add_table_column(label="值 / 路径条目", width_stretch=True, init_width_or_weight=420, parent=self.table_id)
-                    dpg.add_table_column(label="状态", width_fixed=True, init_width_or_weight=110, parent=self.table_id)
+                # 变量列表表格：直接设置 scrollY=True, height=-42，彻底去除外层多余 child_window 导致的双重滚动条！
+                self.table_id = dpg.add_table(
+                    header_row=True,
+                    resizable=True,
+                    scrollY=True,
+                    height=-42,
+                    policy=dpg.mvTable_SizingStretchProp,
+                    row_background=True,
+                    borders_innerH=True,
+                    borders_outerH=True,
+                    borders_innerV=True,
+                    borders_outerV=True
+                )
+                dpg.add_table_column(label="变量名称", width_stretch=True, init_width_or_weight=200, parent=self.table_id)
+                dpg.add_table_column(label="值 / 路径条目", width_stretch=True, init_width_or_weight=420, parent=self.table_id)
+                dpg.add_table_column(label="状态", width_fixed=True, init_width_or_weight=110, parent=self.table_id)
+
+                dpg.add_spacer(height=4)
 
                 # 底部信息条与状态横幅
                 with dpg.group(horizontal=True):
@@ -584,9 +587,9 @@ class EnvUI:
                     self.status_banner_id = dpg.add_text("当前没有待应用的更改，修改将先在此预览并生成快照。", color=COLOR_MUTED)
 
             # ---------------------------------------------------------
-            # 2. 右侧连续编辑与详情栏 (Right Details Panel)
+            # 2. 右侧连续编辑与详情栏 (Right Details Panel - 禁用外层滚动条)
             # ---------------------------------------------------------
-            with dpg.child_window(width=-1, height=-1, border=True):
+            with dpg.child_window(width=-1, height=-1, border=True, no_scrollbar=True):
                 self.detail_container_id = dpg.add_group()
 
         self.refresh_vars()

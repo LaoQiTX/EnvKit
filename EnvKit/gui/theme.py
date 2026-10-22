@@ -79,11 +79,12 @@ def build_dark_theme():
             dpg.add_theme_style(dpg.mvStyleVar_PopupRounding, 6)
             dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 5)
             dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 6)
+            dpg.add_theme_style(dpg.mvStyleVar_ScrollbarSize, 8)
             dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 5)
             dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 10, 6)
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 6)
             dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 8, 6)
-            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 12, 12)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 10)
 
             # 颜色方案
             dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (23, 29, 42))        # #171D2A
@@ -91,6 +92,12 @@ def build_dark_theme():
             dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (32, 43, 62))         # #202B3E
             dpg.add_theme_color(dpg.mvThemeCol_Border, (51, 66, 93))          # #33425D
             dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (0, 0, 0, 0))
+            
+            # 滚动条设计：透明轨道 + 8px 极细浮动药丸滑块，杜绝宽厚丑陋滚动条
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarBg, (0, 0, 0, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrab, (86, 135, 240, 90))
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabHovered, (86, 135, 240, 180))
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabActive, (86, 135, 240, 250))
             
             dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (32, 43, 62))         # #202B3E
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (41, 62, 102)) # #293E66
@@ -142,11 +149,12 @@ def build_light_theme():
             dpg.add_theme_style(dpg.mvStyleVar_PopupRounding, 6)
             dpg.add_theme_style(dpg.mvStyleVar_TabRounding, 5)
             dpg.add_theme_style(dpg.mvStyleVar_ScrollbarRounding, 6)
+            dpg.add_theme_style(dpg.mvStyleVar_ScrollbarSize, 8)
             dpg.add_theme_style(dpg.mvStyleVar_GrabRounding, 5)
             dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 10, 6)
             dpg.add_theme_style(dpg.mvStyleVar_ItemSpacing, 8, 6)
             dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 8, 6)
-            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 12, 12)
+            dpg.add_theme_style(dpg.mvStyleVar_WindowPadding, 10, 10)
 
             # 颜色方案
             dpg.add_theme_color(dpg.mvThemeCol_WindowBg, (250, 251, 253))      # #FAFBFD
@@ -154,6 +162,12 @@ def build_light_theme():
             dpg.add_theme_color(dpg.mvThemeCol_PopupBg, (255, 255, 255))
             dpg.add_theme_color(dpg.mvThemeCol_Border, (219, 227, 239))        # #DBE3EF
             dpg.add_theme_color(dpg.mvThemeCol_BorderShadow, (0, 0, 0, 0))
+            
+            # 滚动条设计：透明轨道 + 8px 极细浮动药丸滑块
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarBg, (0, 0, 0, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrab, (46, 95, 204, 70))
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabHovered, (46, 95, 204, 160))
+            dpg.add_theme_color(dpg.mvThemeCol_ScrollbarGrabActive, (46, 95, 204, 230))
             
             dpg.add_theme_color(dpg.mvThemeCol_FrameBg, (244, 247, 252))       # #F4F7FC
             dpg.add_theme_color(dpg.mvThemeCol_FrameBgHovered, (229, 237, 252))# #E5EDFC

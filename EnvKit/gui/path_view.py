@@ -149,11 +149,13 @@ class PathViewUI:
 
         dpg.add_spacer(height=6)
 
-        # PATH 列表容器
-        with dpg.child_window(height=400, border=True):
+        # PATH 列表容器 (自适应高度，无外层多余滚动条)
+        with dpg.child_window(height=-130, border=True, no_scrollbar=True):
             self.table_id = dpg.add_table(
                 header_row=True,
                 resizable=True,
+                scrollY=True,
+                height=-1,
                 policy=dpg.mvTable_SizingStretchProp,
                 row_background=True,
                 borders_innerH=True,
@@ -169,8 +171,8 @@ class PathViewUI:
 
         dpg.add_spacer(height=6)
 
-        # 新增 PATH 条目卡片
-        with dpg.child_window(height=120, border=True):
+        # 新增 PATH 条目卡片 (固定高度紧凑排版，无滚动条)
+        with dpg.child_window(height=115, border=True, no_scrollbar=True):
             with dpg.group(horizontal=True):
                 dpg.add_text("新增 / 编辑 PATH 条目:")
                 dpg.add_input_text(tag="path_add_input", hint="输入目录路径，或点击右侧浏览选择...", width=520)

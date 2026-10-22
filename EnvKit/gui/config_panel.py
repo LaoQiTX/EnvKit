@@ -20,8 +20,8 @@ class ConfigUI:
         btn_success = create_button_theme((16, 185, 129), (52, 211, 153), (5, 150, 105))
 
         with dpg.group(horizontal=True):
-            # 左侧：模型列表管理
-            with dpg.child_window(width=340, height=560, border=True):
+            # 左侧：模型列表管理 (自适应高度)
+            with dpg.child_window(width=340, height=-10, border=True, no_scrollbar=True):
                 dpg.add_text("[模型] 已配置模型列表", color=COLOR_PRIMARY)
                 dpg.add_spacer(height=4)
                 
@@ -41,8 +41,8 @@ class ConfigUI:
                 dpg.add_button(label="测试模型连接", callback=self._test_connection)
                 dpg.add_button(label="刷新列表", callback=self._refresh_list)
 
-            # 右侧：添加 / 编辑模型 & 数据管理
-            with dpg.child_window(width=-1, height=560, border=True):
+            # 右侧：添加 / 编辑模型 & 数据管理 (自适应高度)
+            with dpg.child_window(width=-1, height=-10, border=True, no_scrollbar=True):
                 dpg.add_text("[配置] 添加 / 编辑大模型配置", color=COLOR_PRIMARY)
                 dpg.add_spacer(height=4)
                 

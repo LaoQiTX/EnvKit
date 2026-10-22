@@ -203,7 +203,7 @@ class RegUI:
         # 5. 关联环境变量卡片 (设计稿特色)
         is_env_key = ('Environment' in subkey)
         if is_env_key and name:
-            with dpg.child_window(height=64, border=True, parent=self.detail_container_id):
+            with dpg.child_window(height=60, border=True, no_scrollbar=True, parent=self.detail_container_id):
                 dpg.add_text("关联环境变量：此值也直接对应 Windows 环境变量", color=COLOR_PRIMARY)
                 if self.on_jump_to_env:
                     dpg.add_button(label="在环境变量中查看 ->", callback=lambda s, d: self.on_jump_to_env(name))
@@ -353,9 +353,9 @@ class RegUI:
         # =============================================================
         with dpg.group(horizontal=True):
             # ---------------------------------------------------------
-            # 1. 中部主工作区 (Middle Content Workspace)
+            # 1. 中部主工作区 (Middle Content Workspace) - 禁用外层滚动条
             # ---------------------------------------------------------
-            with dpg.child_window(width=-390, height=-1, border=True):
+            with dpg.child_window(width=-390, height=-1, border=True, no_scrollbar=True):
                 # 面包屑与大标题
                 dpg.add_text("工作区 > 注册表", color=COLOR_MUTED)
                 dpg.add_spacer(height=2)
@@ -403,21 +403,24 @@ class RegUI:
                 dpg.add_separator()
                 dpg.add_spacer(height=4)
 
-                # 键值表格
-                with dpg.child_window(height=-45, border=True):
-                    self.table_id = dpg.add_table(
-                        header_row=True,
-                        resizable=True,
-                        policy=dpg.mvTable_SizingStretchProp,
-                        row_background=True,
-                        borders_innerH=True,
-                        borders_outerH=True,
-                        borders_innerV=True,
-                        borders_outerV=True
-                    )
-                    dpg.add_table_column(label="名称", width_stretch=True, init_width_or_weight=200, parent=self.table_id)
-                    dpg.add_table_column(label="类型", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
-                    dpg.add_table_column(label="数据", width_stretch=True, init_width_or_weight=400, parent=self.table_id)
+                # 键值表格：直接设置 scrollY=True, height=-42，彻底去除外层多余 child_window 导致的双重滚动条
+                self.table_id = dpg.add_table(
+                    header_row=True,
+                    resizable=True,
+                    scrollY=True,
+                    height=-42,
+                    policy=dpg.mvTable_SizingStretchProp,
+                    row_background=True,
+                    borders_innerH=True,
+                    borders_outerH=True,
+                    borders_innerV=True,
+                    borders_outerV=True
+                )
+                dpg.add_table_column(label="名称", width_stretch=True, init_width_or_weight=200, parent=self.table_id)
+                dpg.add_table_column(label="类型", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
+                dpg.add_table_column(label="数据", width_stretch=True, init_width_or_weight=400, parent=self.table_id)
+
+                dpg.add_spacer(height=4)
 
                 # 底部信息条与状态横幅
                 with dpg.group(horizontal=True):
@@ -429,7 +432,8 @@ class RegUI:
             # ---------------------------------------------------------
             # 2. 右侧连续编辑与详情栏 (Right Details Panel)
             # ---------------------------------------------------------
-            with dpg.child_window(width=-1, height=-1, border=True):
+            with dpg.child_window(width=-1, height=-1, border=True, no_scrollbar=True):
+                self.detail_container_id = dpg.add_group()
                 self.detail_container_id = dpg.add_group()
 
         self._list_values()

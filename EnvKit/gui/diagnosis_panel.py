@@ -58,8 +58,8 @@ class DiagnosisUI:
 
         dpg.add_spacer(height=6)
 
-        # 诊断与大模型建议报告展示窗口
-        with dpg.child_window(height=520, border=True):
+        # 诊断与大模型建议报告展示窗口 (自适应高度，无外层多余滚动条)
+        with dpg.child_window(height=-10, border=True, no_scrollbar=True):
             self.output_text_id = dpg.add_input_text(
                 multiline=True,
                 readonly=True,

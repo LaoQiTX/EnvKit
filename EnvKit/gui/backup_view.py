@@ -176,12 +176,14 @@ class BackupViewUI:
 
         dpg.add_spacer(height=6)
 
-        # 左右双栏：左侧快照列表，右侧 JSON 内容检视
+        # 左右双栏：左侧快照列表，右侧 JSON 内容检视 (自适应高度，无多余嵌套滚动条)
         with dpg.group(horizontal=True):
-            with dpg.child_window(width=-450, height=580, border=True):
+            with dpg.child_window(width=-450, height=-30, border=True, no_scrollbar=True):
                 self.table_id = dpg.add_table(
                     header_row=True,
                     resizable=True,
+                    scrollY=True,
+                    height=-1,
                     policy=dpg.mvTable_SizingStretchProp,
                     row_background=True,
                     borders_innerH=True,
@@ -195,14 +197,14 @@ class BackupViewUI:
                 dpg.add_table_column(label="大小", width_fixed=True, init_width_or_weight=60, parent=self.table_id)
                 dpg.add_table_column(label="操作管理", width_fixed=True, init_width_or_weight=160, parent=self.table_id)
 
-            with dpg.child_window(width=-1, height=580, border=True):
+            with dpg.child_window(width=-1, height=-30, border=True, no_scrollbar=True):
                 dpg.add_text("快照详情预览", color=COLOR_PRIMARY)
                 dpg.add_separator()
                 self.preview_text_id = dpg.add_input_text(
                     multiline=True,
                     readonly=True,
                     width=-1,
-                    height=530,
+                    height=-1,
                     default_value="点击左侧快照项即可在此预览快照 JSON 完整结构。"
                 )
 

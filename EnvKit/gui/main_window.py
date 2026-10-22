@@ -95,27 +95,27 @@ def build_ui():
         dpg.set_item_label('btn_theme_toggle', lbl)
         _update_nav_themes()
 
-    # 顶层主窗口
-    with dpg.window(tag='EnvKit', no_move=True, no_resize=True, no_close=True):
+    # 顶层主窗口（禁用窗口级滚动条，由内部工作区自适应管理）
+    with dpg.window(tag='EnvKit', no_move=True, no_resize=True, no_close=True, no_scrollbar=True):
         with dpg.group(horizontal=True):
             # ==========================================
-            # 1. 左侧导航侧边栏 (Sidebar - 宽度 228，设计稿严格一致)
+            # 1. 左侧导航侧边栏 (Sidebar - 宽度 228，全无滚动条)
             # ==========================================
-            with dpg.child_window(width=228, height=-1, border=True):
+            with dpg.child_window(width=228, height=-1, border=True, no_scrollbar=True):
                 # 顶部品牌 Logo 与应用副标 (设计稿一致)
                 with dpg.group(horizontal=True):
                     dpg.add_text("[envkit]", color=COLOR_PRIMARY)
                     dpg.add_text("本地环境工作台", color=COLOR_MUTED)
 
-                dpg.add_spacer(height=6)
+                dpg.add_spacer(height=4)
 
-                # 本机工作区卡片 (设计稿一致)
+                # 本机工作区卡片 (设计稿一致，禁用滚动条)
                 win_ver = "Windows 11" if "11" in platform.version() or "10.0.2" in platform.version() else "Windows 10"
-                with dpg.child_window(height=58, border=True):
+                with dpg.child_window(height=56, border=True, no_scrollbar=True):
                     dpg.add_text("本机工作区", color=COLOR_PRIMARY)
                     dpg.add_text(f"{win_ver} / 64-bit", color=COLOR_MUTED)
 
-                dpg.add_spacer(height=8)
+                dpg.add_spacer(height=6)
 
                 act_theme, inact_theme = _get_nav_themes()
 
@@ -127,16 +127,16 @@ def build_ui():
                         tag=nav_id,
                         label=f"  {label}",
                         width=-1,
-                        height=36,
+                        height=34,
                         callback=lambda s, d, u: _switch_view(u[0], u[1]),
                         user_data=(nav_id, view_id)
                     )
                     dpg.bind_item_theme(btn, act_theme if nav_id == 'nav_env' else inact_theme)
                     dpg.add_spacer(height=2)
 
-                dpg.add_spacer(height=6)
+                dpg.add_spacer(height=4)
                 dpg.add_separator()
-                dpg.add_spacer(height=6)
+                dpg.add_spacer(height=4)
 
                 # 分组 2: 工作流与分析
                 dpg.add_text("工作流与分析", color=COLOR_MUTED)
@@ -146,24 +146,24 @@ def build_ui():
                         tag=nav_id,
                         label=f"  {label}",
                         width=-1,
-                        height=36,
+                        height=34,
                         callback=lambda s, d, u: _switch_view(u[0], u[1]),
                         user_data=(nav_id, view_id)
                     )
                     dpg.bind_item_theme(btn, inact_theme)
                     dpg.add_spacer(height=2)
 
-                dpg.add_spacer(height=14)
-                dpg.add_separator()
                 dpg.add_spacer(height=6)
+                dpg.add_separator()
+                dpg.add_spacer(height=4)
 
                 # 侧栏底部：设计稿“先预览，再应用”理念卡片与系统状态
                 with dpg.group():
-                    with dpg.child_window(height=82, border=True):
+                    with dpg.child_window(height=78, border=True, no_scrollbar=True):
                         dpg.add_text("先预览，再应用", color=COLOR_PRIMARY)
-                        dpg.add_text("修改前生成快照，每一次更改都可追溯、可回滚。", color=COLOR_MUTED, wrap=190)
+                        dpg.add_text("修改前自动快照，每步操作可追溯可回滚。", color=COLOR_MUTED, wrap=190)
 
-                    dpg.add_spacer(height=6)
+                    dpg.add_spacer(height=4)
 
                     # 主题切换按钮
                     cur_mode = get_current_theme_mode()
@@ -176,7 +176,7 @@ def build_ui():
                         callback=_on_toggle_theme
                     )
 
-                    dpg.add_spacer(height=4)
+                    dpg.add_spacer(height=3)
                     ram_mb = get_process_memory_mb()
                     dpg.add_text(f"内存占用: ~{ram_mb} MB", color=COLOR_SUCCESS)
 
@@ -193,9 +193,9 @@ def build_ui():
                         dpg.bind_item_theme(b_uac, btn_admin)
 
             # ==========================================
-            # 2. 右侧主工作区呈现容器
+            # 2. 右侧主工作区容器 (去除多余嵌套 child_window，避免双层滚动条)
             # ==========================================
-            with dpg.child_window(width=-1, height=-1, border=False, tag='content_area'):
+            with dpg.group(tag='content_area'):
                 # 1. 环境变量视图 (双栏：表格 + 详情栏)
                 with dpg.group(tag='view_env', show=True):
                     env_ui = EnvUI(analyzer, on_send_to_diagnose=_jump_to_diagnose)

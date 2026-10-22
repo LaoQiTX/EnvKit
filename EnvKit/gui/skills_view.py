@@ -64,13 +64,13 @@ class SkillsViewUI:
 
         # 技能卡片列表区（左/上）与执行控制台（右/下）
         with dpg.group(horizontal=True):
-            # 左侧：技能卡片列表
-            with dpg.child_window(width=540, height=540, border=True):
+            # 左侧：技能卡片列表 (自适应高度)
+            with dpg.child_window(width=540, height=-10, border=True):
                 self.cards_container_id = dpg.add_group()
                 self._render_skill_cards()
 
-            # 右侧：实时输出控制台与报告详情
-            with dpg.child_window(width=-1, height=540, border=True):
+            # 右侧：实时输出控制台与报告详情 (自适应高度，无外层多余滚动条)
+            with dpg.child_window(width=-1, height=-10, border=True, no_scrollbar=True):
                 dpg.add_text("[日志] 技能执行日志与诊断报告", color=COLOR_PRIMARY)
                 self.status_text_id = dpg.add_text("就绪。选择任意技能点击“排查”或“一键修复”查看结果。", color=COLOR_MUTED)
                 dpg.add_separator()
@@ -78,7 +78,7 @@ class SkillsViewUI:
                     multiline=True,
                     readonly=True,
                     width=-1,
-                    height=450,
+                    height=-1,
                     default_value="[EnvKit Skill Engine v2.0]\n本地技能就绪。点击左侧技能卡片进行专项检测与修复。"
                 )
 
@@ -98,7 +98,7 @@ class SkillsViewUI:
             if self.category_filter != "全部" and skill.category != self.category_filter:
                 continue
 
-            with dpg.child_window(parent=self.cards_container_id, height=115, border=True):
+            with dpg.child_window(parent=self.cards_container_id, height=120, border=True, no_scrollbar=True):
                 with dpg.group(horizontal=True):
                     dpg.add_text(f"{skill.icon} {skill.name}", color=COLOR_PRIMARY)
                     dpg.add_spacer(width=10)
