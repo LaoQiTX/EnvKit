@@ -4,7 +4,10 @@ from typing import List, Dict, Any, Optional
 from core.env_manager import EnvManager
 from utils.path_check import analyze_paths, rebuild_path, clean_path_entries, normalize_path
 from utils.win_utils import choose_directory, open_in_explorer
-from gui.theme import COLOR_SUCCESS, COLOR_DANGER, COLOR_WARNING, COLOR_EMPTY, COLOR_MUTED, COLOR_PRIMARY, create_button_theme
+from gui.theme import (
+    COLOR_SUCCESS, COLOR_DANGER, COLOR_WARNING, COLOR_EMPTY,
+    COLOR_MUTED, COLOR_PRIMARY, create_button_theme, get_table_row_selected_color
+)
 
 class PathViewUI:
     def __init__(self, get_scope_callback):
@@ -47,6 +50,8 @@ class PathViewUI:
             dpg.delete_item(c)
 
         filter_txt = self.search_filter.lower().strip()
+        row_idx = 0
+        sel_color = get_table_row_selected_color()
 
         for idx, entry in enumerate(self.path_entries):
             raw = entry['raw']
@@ -55,19 +60,18 @@ class PathViewUI:
 
             row_id = dpg.add_table_row(parent=self.table_id)
             
-            # 1. 序号与整行高亮选中 (行高 34px 全覆盖)
+            # 1. 序号与整行高亮选中 (依靠内边距自然垂直居中)
             is_sel = (idx == self.selected_idx)
             dpg.add_selectable(
                 label=f"#{idx + 1}",
                 parent=row_id,
                 span_columns=True,
-                height=34,
                 default_value=is_sel,
                 callback=self._on_row_select,
                 user_data=(idx, raw)
             )
             
-            # 2. 状态标签 (垂直居中)
+            # 2. 状态标签
             badge_text = "有效"
             badge_color = COLOR_SUCCESS
             if entry['is_empty']:
@@ -86,34 +90,32 @@ class PathViewUI:
                 badge_text = "指向文件"
                 badge_color = COLOR_WARNING
 
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=3)
-                dpg.add_text(badge_text, color=badge_color)
+            dpg.add_text(badge_text, parent=row_id, color=badge_color)
 
-            # 3. 启用复选框 (垂直居中)
+            # 3. 启用复选框
             chk_tag = f"path_enabled_{idx}"
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=2)
-                dpg.add_checkbox(tag=chk_tag, default_value=True, callback=self._on_toggle_enable, user_data=idx)
+            dpg.add_checkbox(tag=chk_tag, parent=row_id, default_value=True, callback=self._on_toggle_enable, user_data=idx)
 
-            # 4. 路径文本 (垂直居中)
+            # 4. 路径文本
             disp_text = raw if raw else "(空条目 ;;)"
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=3)
-                dpg.add_text(disp_text, color=badge_color if not entry['exists'] else (240, 243, 246, 255))
+            dpg.add_text(disp_text, parent=row_id, color=badge_color if not entry['exists'] else COLOR_MUTED)
 
-            # 5. 操作按钮组 (垂直居中)
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=1)
-                btn_group = dpg.add_group(horizontal=True)
-                dpg.add_button(label="▲", parent=btn_group, callback=self._move_item, user_data=(idx, -1), width=28)
-                dpg.add_button(label="▼", parent=btn_group, callback=self._move_item, user_data=(idx, 1), width=28)
-                dpg.add_button(label="置顶", parent=btn_group, callback=self._move_to_top, user_data=idx)
+            # 5. 操作按钮组
+            with dpg.group(horizontal=True, parent=row_id):
+                dpg.add_button(label="▲", callback=self._move_item, user_data=(idx, -1), width=28)
+                dpg.add_button(label="▼", callback=self._move_item, user_data=(idx, 1), width=28)
+                dpg.add_button(label="置顶", callback=self._move_to_top, user_data=idx)
                 
                 if entry['exists']:
-                    dpg.add_button(label="打开", parent=btn_group, callback=lambda s, d, u: open_in_explorer(u), user_data=normalize_path(raw))
+                    dpg.add_button(label="打开", callback=lambda s, d, u: open_in_explorer(u), user_data=normalize_path(raw))
                     
-                dpg.add_button(label="删除", parent=btn_group, callback=self._delete_item, user_data=idx)
+                dpg.add_button(label="删除", callback=self._delete_item, user_data=idx)
+
+            if is_sel:
+                dpg.set_table_row_color(self.table_id, row_idx, sel_color)
+            else:
+                dpg.unset_table_row_color(self.table_id, row_idx)
+            row_idx += 1
 
     def _on_row_select(self, sender, app_data, user_data):
         idx, raw = user_data
@@ -166,17 +168,21 @@ class PathViewUI:
                 scrollY=True,
                 height=-1,
                 policy=dpg.mvTable_SizingStretchProp,
-                row_background=True,
+                row_background=False,
                 borders_innerH=True,
-                borders_outerH=True,
-                borders_innerV=True,
-                borders_outerV=True
+                borders_outerH=False,
+                borders_innerV=False,
+                borders_outerV=False
             )
-            dpg.add_table_column(label="序号", width_fixed=True, init_width_or_weight=60, parent=self.table_id)
-            dpg.add_table_column(label="状态诊断", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
-            dpg.add_table_column(label="启用", width_fixed=True, init_width_or_weight=50, parent=self.table_id)
-            dpg.add_table_column(label="完整路径", width_stretch=True, init_width_or_weight=450, parent=self.table_id)
-            dpg.add_table_column(label="操作管理", width_fixed=True, init_width_or_weight=220, parent=self.table_id)
+            col_idx = dpg.add_table_column(label="序号", width_fixed=True, init_width_or_weight=60, parent=self.table_id)
+            col_diag = dpg.add_table_column(label="状态诊断", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
+            col_en = dpg.add_table_column(label="启用", width_fixed=True, init_width_or_weight=50, parent=self.table_id)
+            col_path = dpg.add_table_column(label="完整路径", width_stretch=True, init_width_or_weight=450, parent=self.table_id)
+            col_ops = dpg.add_table_column(label="操作管理", width_fixed=True, init_width_or_weight=220, parent=self.table_id)
+
+            for col in (col_idx, col_diag, col_en, col_path, col_ops):
+                if dpg.does_item_exist('font_header'):
+                    dpg.bind_item_font(col, 'font_header')
 
         dpg.add_spacer(height=6)
 

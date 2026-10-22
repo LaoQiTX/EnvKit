@@ -10,7 +10,7 @@ from utils.path_helper import get_backup_dir
 from utils.win_utils import open_in_explorer
 from gui.theme import (
     COLOR_SUCCESS, COLOR_DANGER, COLOR_WARNING, COLOR_MUTED,
-    COLOR_PRIMARY, create_button_theme
+    COLOR_PRIMARY, create_button_theme, get_table_row_selected_color
 )
 
 class BackupViewUI:
@@ -37,6 +37,8 @@ class BackupViewUI:
         
         btn_restore = create_button_theme((46, 95, 204), (36, 77, 176), (25, 60, 145), text_color=(255, 255, 255))
         btn_danger = create_button_theme((164, 68, 54), (190, 80, 65), (140, 55, 45), text_color=(255, 255, 255))
+        row_idx = 0
+        sel_color = get_table_row_selected_color()
 
         for f in files:
             stat = f.stat()
@@ -53,39 +55,31 @@ class BackupViewUI:
                 cat_color = COLOR_WARNING
 
             row_id = dpg.add_table_row(parent=self.table_id)
+            is_sel = (str(f) == self.selected_file)
             
-            # 1. 时间戳与选中高亮 (行高 34px 全覆盖)
+            # 1. 时间戳与选中高亮
             dpg.add_selectable(
                 label=mtime_str,
                 parent=row_id,
                 span_columns=True,
-                height=34,
+                default_value=is_sel,
                 callback=self._on_select_snapshot,
                 user_data=str(f)
             )
 
-            # 2. 类别 (垂直居中)
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=3)
-                dpg.add_text(category, color=cat_color)
+            # 2. 类别
+            dpg.add_text(category, parent=row_id, color=cat_color)
 
-            # 3. 文件名 (垂直居中)
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=3)
-                dpg.add_text(f.name)
+            # 3. 文件名
+            dpg.add_text(f.name, parent=row_id)
 
-            # 4. 文件大小 (垂直居中)
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=3)
-                dpg.add_text(f"{size_kb} KB", color=COLOR_MUTED)
+            # 4. 文件大小
+            dpg.add_text(f"{size_kb} KB", parent=row_id, color=COLOR_MUTED)
 
-            # 5. 操作组 (垂直居中)
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=1)
-                actions_grp = dpg.add_group(horizontal=True)
+            # 5. 操作组
+            with dpg.group(horizontal=True, parent=row_id):
                 b_res = dpg.add_button(
                     label="恢复",
-                    parent=actions_grp,
                     callback=self._do_restore,
                     user_data=str(f)
                 )
@@ -93,22 +87,27 @@ class BackupViewUI:
 
                 dpg.add_button(
                     label="定位",
-                    parent=actions_grp,
                     callback=lambda s, d, u: open_in_explorer(u),
                     user_data=str(f)
                 )
 
                 b_del = dpg.add_button(
                     label="删除",
-                    parent=actions_grp,
                     callback=self._do_delete,
                     user_data=str(f)
                 )
                 dpg.bind_item_theme(b_del, btn_danger)
 
+            if is_sel:
+                dpg.set_table_row_color(self.table_id, row_idx, sel_color)
+            else:
+                dpg.unset_table_row_color(self.table_id, row_idx)
+            row_idx += 1
+
     def _on_select_snapshot(self, sender, app_data, user_data):
         file_path = user_data
         self.selected_file = file_path
+        self.refresh()
         try:
             with open(file_path, 'r', encoding='utf-8') as fh:
                 data = json.load(fh)
@@ -194,17 +193,21 @@ class BackupViewUI:
                     scrollY=True,
                     height=-1,
                     policy=dpg.mvTable_SizingStretchProp,
-                    row_background=True,
+                    row_background=False,
                     borders_innerH=True,
-                    borders_outerH=True,
-                    borders_innerV=True,
-                    borders_outerV=True
+                    borders_outerH=False,
+                    borders_innerV=False,
+                    borders_outerV=False
                 )
-                dpg.add_table_column(label="快照生成时间", width_stretch=True, init_width_or_weight=170, parent=self.table_id)
-                dpg.add_table_column(label="类别", width_fixed=True, init_width_or_weight=90, parent=self.table_id)
-                dpg.add_table_column(label="快照文件名", width_stretch=True, init_width_or_weight=220, parent=self.table_id)
-                dpg.add_table_column(label="大小", width_fixed=True, init_width_or_weight=60, parent=self.table_id)
-                dpg.add_table_column(label="操作管理", width_fixed=True, init_width_or_weight=160, parent=self.table_id)
+                col_time = dpg.add_table_column(label="快照生成时间", width_stretch=True, init_width_or_weight=170, parent=self.table_id)
+                col_cat = dpg.add_table_column(label="类别", width_fixed=True, init_width_or_weight=90, parent=self.table_id)
+                col_name = dpg.add_table_column(label="快照文件名", width_stretch=True, init_width_or_weight=220, parent=self.table_id)
+                col_size = dpg.add_table_column(label="大小", width_fixed=True, init_width_or_weight=60, parent=self.table_id)
+                col_ops = dpg.add_table_column(label="操作管理", width_fixed=True, init_width_or_weight=160, parent=self.table_id)
+
+                for col in (col_time, col_cat, col_name, col_size, col_ops):
+                    if dpg.does_item_exist('font_header'):
+                        dpg.bind_item_font(col, 'font_header')
 
             with dpg.child_window(width=-1, height=-30, border=True, no_scrollbar=True):
                 dpg.add_text("快照详情预览", color=COLOR_PRIMARY)

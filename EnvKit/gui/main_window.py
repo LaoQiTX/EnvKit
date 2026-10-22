@@ -100,6 +100,13 @@ def build_ui():
             dpg.bind_item_theme(env_ui.splitter_tag, create_splitter_theme(new_mode))
         if reg_ui and dpg.does_item_exist(reg_ui.splitter_tag):
             dpg.bind_item_theme(reg_ui.splitter_tag, create_splitter_theme(new_mode))
+        # 刷新所有表格的满格选中色以适配新主题配色
+        if env_ui and env_ui.table_id and dpg.does_item_exist(env_ui.table_id):
+            env_ui._render_rows()
+        if reg_ui and reg_ui.table_id and dpg.does_item_exist(reg_ui.table_id):
+            reg_ui._render_rows()
+        if backup_ui and backup_ui.table_id and dpg.does_item_exist(backup_ui.table_id):
+            backup_ui.refresh()
 
     # 顶层主窗口（禁用窗口级滚动条，由内部工作区自适应管理）
     with dpg.window(tag='EnvKit', no_move=True, no_resize=True, no_close=True, no_scrollbar=True):

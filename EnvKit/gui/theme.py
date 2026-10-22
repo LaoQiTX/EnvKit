@@ -119,14 +119,14 @@ def build_dark_theme():
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (86, 135, 240))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (60, 105, 210))
             
-            # 表格样式与单元格间距优化 (垂直内边距设为 0，使选中整行覆盖全单元格)
-            dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (32, 43, 62))
-            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (28, 36, 51))
-            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (32, 43, 62))
+            # 表格与选中样式
+            dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (28, 36, 51))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (23, 29, 42))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (23, 29, 42))
             dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (51, 66, 93))
-            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (65, 84, 118))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (51, 66, 93))
             
-            # 文字与选中高亮 (纯正不透明度与悬停色，整行高亮无缝覆盖)
+            # 文字与选中高亮
             dpg.add_theme_color(dpg.mvThemeCol_Text, (226, 233, 246))         # #E2E9F6
             dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, (120, 135, 160))
             dpg.add_theme_color(dpg.mvThemeCol_TextSelectedBg, (86, 135, 240, 120))
@@ -134,13 +134,23 @@ def build_dark_theme():
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, (86, 135, 240))
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, (115, 155, 245))
             dpg.add_theme_color(dpg.mvThemeCol_Separator, (51, 66, 93))
-            dpg.add_theme_color(dpg.mvThemeCol_Header, (41, 62, 102, 255))    # 纯色选中背景 #293E66
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (56, 85, 140, 240)) # 纯净悬停背景
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (60, 105, 210, 255))
 
         with dpg.theme_component(dpg.mvTable):
-            # 表格单元格垂直 padding 紧凑化，让 selectable(span_columns) 完美贴合表格行上下边缘
-            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 10, 0)
+            # 表格内边距：水平 14px，垂直 11px，表头(~44px)与数据行大气舒展、垂直绝对居中
+            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 14, 11)
+            dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (28, 36, 51))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (23, 29, 42))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (23, 29, 42))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (51, 66, 93))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (51, 66, 93))
+
+        with dpg.theme_component(dpg.mvSelectable):
+            # 透明选中底，全行 100% 满格高亮由 set_table_row_color 精准上色，杜绝内缩与色块对不上
+            dpg.add_theme_color(dpg.mvThemeCol_Header, (0, 0, 0, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (34, 46, 68, 200))
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (41, 62, 102, 255))
+            dpg.add_theme_style(dpg.mvStyleVar_SelectableTextAlign, 0.0, 0.5)
+            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, 0)
     return theme
 
 def build_light_theme():
@@ -194,14 +204,14 @@ def build_light_theme():
             dpg.add_theme_color(dpg.mvThemeCol_ButtonHovered, (229, 237, 252))
             dpg.add_theme_color(dpg.mvThemeCol_ButtonActive, (210, 222, 245))
             
-            # 表格样式与单元格间距优化 (垂直内边距设为 0，使选中整行覆盖全单元格)
+            # 表格与选中样式
             dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (244, 247, 252))
             dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (253, 254, 255))
-            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (244, 247, 252))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (253, 254, 255))
             dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (219, 227, 239))
-            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (200, 210, 225))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (219, 227, 239))
             
-            # 文字与选中高亮 (高辨识度纯色选中背景)
+            # 文字与选中高亮
             dpg.add_theme_color(dpg.mvThemeCol_Text, (32, 45, 67))             # #202D43
             dpg.add_theme_color(dpg.mvThemeCol_TextDisabled, (130, 142, 160))
             dpg.add_theme_color(dpg.mvThemeCol_TextSelectedBg, (46, 95, 204, 80))
@@ -209,14 +219,32 @@ def build_light_theme():
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrab, (46, 95, 204))
             dpg.add_theme_color(dpg.mvThemeCol_SliderGrabActive, (36, 77, 176))
             dpg.add_theme_color(dpg.mvThemeCol_Separator, (219, 227, 239))
-            dpg.add_theme_color(dpg.mvThemeCol_Header, (215, 228, 250, 255))   # 浅蓝选中 #D7E4FA
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (232, 240, 254, 255)) # 悬停
-            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (198, 215, 245, 255))
 
         with dpg.theme_component(dpg.mvTable):
-            # 表格单元格垂直 padding 紧凑化，让 selectable(span_columns) 完美贴合表格行上下边缘
-            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 10, 0)
+            # 表格内边距：水平 14px，垂直 11px，表头(~44px)与数据行大气舒展、垂直绝对居中
+            dpg.add_theme_style(dpg.mvStyleVar_CellPadding, 14, 11)
+            dpg.add_theme_color(dpg.mvThemeCol_TableHeaderBg, (244, 247, 252))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBg, (253, 254, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_TableRowBgAlt, (253, 254, 255))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderLight, (219, 227, 239))
+            dpg.add_theme_color(dpg.mvThemeCol_TableBorderStrong, (219, 227, 239))
+
+        with dpg.theme_component(dpg.mvSelectable):
+            # 透明选中底，全行 100% 满格高亮由 set_table_row_color 精准上色，杜绝内缩与色块对不上
+            dpg.add_theme_color(dpg.mvThemeCol_Header, (0, 0, 0, 0))
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderHovered, (229, 237, 252, 180)) # 浅色模式优雅淡蓝悬停
+            dpg.add_theme_color(dpg.mvThemeCol_HeaderActive, (215, 228, 250, 255))
+            dpg.add_theme_style(dpg.mvStyleVar_SelectableTextAlign, 0.0, 0.5)
+            dpg.add_theme_style(dpg.mvStyleVar_FramePadding, 0, 0)
     return theme
+
+def get_table_row_selected_color():
+    """返回当前主题下的表格行选中满格高亮色 (浅色 #E5EDFC, 深色 #293E66)"""
+    return (41, 62, 102, 255) if _CURRENT_THEME == 'dark' else (229, 237, 252, 255)
+
+def get_table_row_normal_color():
+    """返回当前主题下的表格行默认背景色"""
+    return (23, 29, 42, 255) if _CURRENT_THEME == 'dark' else (253, 254, 255, 255)
 
 def setup_global_theme():
     """初始化全局主题，恢复用户保存的深色/浅色偏好"""

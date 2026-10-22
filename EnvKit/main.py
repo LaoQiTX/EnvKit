@@ -17,7 +17,7 @@ import dearpygui.dearpygui as dpg
 from gui.main_window import build_ui
 
 def _setup_font():
-    """配置高质量中文字体（打包模式与源码模式统一生效）"""
+    """配置高质量中文字体（支持正文与加大加粗表头字体）"""
     with dpg.font_registry():
         candidates = [
             r"C:\Windows\Fonts\msyh.ttc",
@@ -33,11 +33,19 @@ def _setup_font():
                 break
                 
         if chosen_path:
-            with dpg.font(chosen_path, 20) as font:
+            # 1. 通用正文字体 (20px)
+            with dpg.font(chosen_path, 20, tag='font_body') as font_body:
                 dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Full)
                 dpg.add_font_range(0x0020, 0x007E)
                 dpg.add_font_range(0x25A0, 0x25FF)
-            dpg.bind_font(font)
+            dpg.bind_font(font_body)
+
+            # 2. 表头专用加大加粗字体 (22px，解决表头字太小问题)
+            bold_path = r"C:\Windows\Fonts\msyhbd.ttc" if os.path.exists(r"C:\Windows\Fonts\msyhbd.ttc") else chosen_path
+            with dpg.font(bold_path, 22, tag='font_header') as font_header:
+                dpg.add_font_range_hint(dpg.mvFontRangeHint_Chinese_Full)
+                dpg.add_font_range(0x0020, 0x007E)
+                dpg.add_font_range(0x25A0, 0x25FF)
 
 def main():
     try:

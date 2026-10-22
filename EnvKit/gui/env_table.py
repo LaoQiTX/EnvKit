@@ -16,7 +16,8 @@ from utils.win_utils import choose_file, choose_directory, open_in_explorer
 from utils.path_check import normalize_path, analyze_paths, clean_path_entries
 from gui.theme import (
     COLOR_SUCCESS, COLOR_DANGER, COLOR_WARNING, COLOR_MUTED,
-    COLOR_PRIMARY, COLOR_EMPTY, create_button_theme, create_splitter_theme
+    COLOR_PRIMARY, COLOR_EMPTY, create_button_theme, create_splitter_theme,
+    get_table_row_selected_color
 )
 
 CRITICAL_ENV_VARS = {
@@ -94,6 +95,8 @@ class EnvUI:
             dpg.delete_item(c)
 
         flt = self.search_filter.lower().strip()
+        row_idx = 0
+        sel_color = get_table_row_selected_color()
 
         for k, v in sorted(self.vars_cache.items(), key=lambda x: x[0].upper()):
             if flt and (flt not in k.lower() and flt not in v.lower()):
@@ -102,18 +105,17 @@ class EnvUI:
             row_id = dpg.add_table_row(parent=self.table_id)
             is_sel = (k == self.selected_key and not self.is_new_mode)
 
-            # 1. 变量名称（整行高亮选择，行高 34px 彻底覆盖全单元格）
+            # 1. 变量名称（整行满格高亮选择，依靠单元格 padding 自然垂直居中）
             dpg.add_selectable(
                 label=k,
                 parent=row_id,
                 span_columns=True,
-                height=34,
                 default_value=is_sel,
                 callback=self._on_row_selected,
                 user_data=k
             )
 
-            # 2. 变量值概览 (垂直居中微调与精确对齐)
+            # 2. 变量值概览
             is_path_var = (k.upper() == 'PATH')
             if is_path_var:
                 parts_count = len([p for p in v.split(';') if p.strip()])
@@ -123,11 +125,9 @@ class EnvUI:
                 disp_val = v if len(v) <= 80 else v[:77] + "..."
                 val_color = COLOR_MUTED
 
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=3)
-                dpg.add_text(disp_val, color=val_color)
+            dpg.add_text(disp_val, parent=row_id, color=val_color)
 
-            # 3. 状态标签 (设计稿美学：常规 / 正常 / 提示 / 关键，垂直居中)
+            # 3. 状态标签 (设计稿美学：常规 / 正常 / 提示 / 关键)
             badge_text = "正常"
             badge_color = COLOR_MUTED
             if is_path_var:
@@ -155,9 +155,14 @@ class EnvUI:
                 badge_text = "空值"
                 badge_color = COLOR_DANGER
 
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=3)
-                dpg.add_text(badge_text, color=badge_color)
+            dpg.add_text(badge_text, parent=row_id, color=badge_color)
+
+            # 满格行背景着色：如果是当前选中行，直接以设计稿纯色填充全行单元格（无缝贴合、无内缩）
+            if is_sel:
+                dpg.set_table_row_color(self.table_id, row_idx, sel_color)
+            else:
+                dpg.unset_table_row_color(self.table_id, row_idx)
+            row_idx += 1
 
     def _on_row_selected(self, sender, app_data, user_data):
         self.selected_key = user_data
@@ -578,22 +583,26 @@ class EnvUI:
                 dpg.add_separator()
                 dpg.add_spacer(height=4)
 
-                # 变量列表表格：直接设置 scrollY=True, height=-42，彻底去除外层多余 child_window 导致的双重滚动条！
+                # 变量列表表格：直接设置 scrollY=True, height=-42，去除纵向分割线，保证整行无缝纯色高亮
                 self.table_id = dpg.add_table(
                     header_row=True,
                     resizable=True,
                     scrollY=True,
                     height=-42,
                     policy=dpg.mvTable_SizingStretchProp,
-                    row_background=True,
+                    row_background=False,
                     borders_innerH=True,
-                    borders_outerH=True,
-                    borders_innerV=True,
-                    borders_outerV=True
+                    borders_outerH=False,
+                    borders_innerV=False,
+                    borders_outerV=False
                 )
-                dpg.add_table_column(label="变量名称", width_stretch=True, init_width_or_weight=200, parent=self.table_id)
-                dpg.add_table_column(label="值 / 路径条目", width_stretch=True, init_width_or_weight=420, parent=self.table_id)
-                dpg.add_table_column(label="状态", width_fixed=True, init_width_or_weight=110, parent=self.table_id)
+                col_name = dpg.add_table_column(label="变量名称", width_stretch=True, init_width_or_weight=200, parent=self.table_id)
+                col_val = dpg.add_table_column(label="值 / 路径条目", width_stretch=True, init_width_or_weight=420, parent=self.table_id)
+                col_status = dpg.add_table_column(label="状态", width_fixed=True, init_width_or_weight=110, parent=self.table_id)
+
+                for col in (col_name, col_val, col_status):
+                    if dpg.does_item_exist('font_header'):
+                        dpg.bind_item_font(col, 'font_header')
 
                 dpg.add_spacer(height=4)
 

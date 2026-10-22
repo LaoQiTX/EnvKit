@@ -15,7 +15,8 @@ from utils.win_utils import choose_file, open_in_explorer
 from utils.path_check import normalize_path
 from gui.theme import (
     COLOR_SUCCESS, COLOR_DANGER, COLOR_WARNING, COLOR_MUTED,
-    COLOR_PRIMARY, create_button_theme, create_splitter_theme
+    COLOR_PRIMARY, create_button_theme, create_splitter_theme,
+    get_table_row_selected_color
 )
 
 class RegUI:
@@ -74,6 +75,8 @@ class RegUI:
 
         flt = self.search_filter.lower().strip()
         filtered_count = 0
+        row_idx = 0
+        sel_color = get_table_row_selected_color()
 
         for item in self.items_cache:
             name = item['name']
@@ -87,27 +90,28 @@ class RegUI:
             row_id = dpg.add_table_row(parent=self.table_id)
             is_sel = (self.selected_item and self.selected_item['name'] == name and not self.is_new_mode)
 
-            # 1. 名称（单击整行在右侧直接连续编辑，行高 34px 覆盖全单元格）
+            # 1. 名称（单击整行在右侧直接连续编辑，无人工高度，自然垂直居中）
             dpg.add_selectable(
                 label=name if name else "(默认)",
                 parent=row_id,
                 span_columns=True,
-                height=34,
                 default_value=is_sel,
                 callback=self._on_row_selected,
                 user_data=item
             )
 
-            # 2. 类型 (垂直居中对齐)
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=3)
-                dpg.add_text(t_str, color=COLOR_MUTED)
+            # 2. 类型
+            dpg.add_text(t_str, parent=row_id, color=COLOR_MUTED)
 
-            # 3. 数据 (垂直居中对齐)
+            # 3. 数据
             disp_val = val if len(val) <= 80 else val[:77] + "..."
-            with dpg.group(parent=row_id):
-                dpg.add_spacer(height=3)
-                dpg.add_text(disp_val)
+            dpg.add_text(disp_val, parent=row_id)
+
+            if is_sel:
+                dpg.set_table_row_color(self.table_id, row_idx, sel_color)
+            else:
+                dpg.unset_table_row_color(self.table_id, row_idx)
+            row_idx += 1
 
         if self.footer_count_id and dpg.does_item_exist(self.footer_count_id):
             dpg.set_value(self.footer_count_id, f"{len(self.items_cache)} 个值")
@@ -421,22 +425,26 @@ class RegUI:
                 dpg.add_separator()
                 dpg.add_spacer(height=4)
 
-                # 键值表格：直接设置 scrollY=True, height=-42，彻底去除外层多余 child_window 导致的双重滚动条
+                # 键值表格：直接设置 scrollY=True, height=-42，去除纵向分割线，保证整行无缝纯色高亮
                 self.table_id = dpg.add_table(
                     header_row=True,
                     resizable=True,
                     scrollY=True,
                     height=-42,
                     policy=dpg.mvTable_SizingStretchProp,
-                    row_background=True,
+                    row_background=False,
                     borders_innerH=True,
-                    borders_outerH=True,
-                    borders_innerV=True,
-                    borders_outerV=True
+                    borders_outerH=False,
+                    borders_innerV=False,
+                    borders_outerV=False
                 )
-                dpg.add_table_column(label="名称", width_stretch=True, init_width_or_weight=200, parent=self.table_id)
-                dpg.add_table_column(label="类型", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
-                dpg.add_table_column(label="数据", width_stretch=True, init_width_or_weight=400, parent=self.table_id)
+                c_name = dpg.add_table_column(label="名称", width_stretch=True, init_width_or_weight=200, parent=self.table_id)
+                c_type = dpg.add_table_column(label="类型", width_fixed=True, init_width_or_weight=130, parent=self.table_id)
+                c_data = dpg.add_table_column(label="数据", width_stretch=True, init_width_or_weight=400, parent=self.table_id)
+
+                for col in (c_name, c_type, c_data):
+                    if dpg.does_item_exist('font_header'):
+                        dpg.bind_item_font(col, 'font_header')
 
                 dpg.add_spacer(height=4)
 
